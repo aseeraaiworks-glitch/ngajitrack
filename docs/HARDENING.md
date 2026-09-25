@@ -7,3 +7,5 @@ Jalankan dari root project dengan Docker tersedia pada PATH dan Supabase lokal n
 - URL koneksi hanya berada dalam memori/environment proses anak, tidak ditulis ke repo. Output pengujian berada dalam reports/ yang diabaikan Git.
 - Bila proses dibunuh, database ngt_test_<UUID> dapat tertinggal. Jangan menghapus otomatis berdasarkan prefix: identifikasi run dan periksa koneksi/data sebelum cleanup manual.
 - Test SQL memakai request claims database; tidak mengklaim sebagai test HTTP/JWT baru. Tiga test historis tetap embedded dan diberi nama eksplisit.
+
+- node --test --test-concurrency=1 tests/concurrency.test.mjs: enam interleaving nyata; test menggunakan database unik per skenario dan memeriksa wait_event_type=Lock.

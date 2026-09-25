@@ -1,0 +1,113 @@
+# Laporan pengujian backend foundation
+
+Tanggal: 2026-09-24. Scope: backend foundation saja.
+
+## Checkpoint terbaru — integrasi Supabase lokal LULUS
+
+Tanggal 2026-09-24. Docker 29.8.0 (Client/Server), WSL2, CLI 2.117.0; PostgreSQL 17.6. Layanan dijalankan di instance lokal ngajitrack, tanpa remote project.
+
+| Pemeriksaan | Hasil aktual | Bukti |
+|---|---|---|
+| Startup + migration 1–7 | Applied; history cocok; migration up tidak memiliki pending | reports/local-migrations.json |
+| Migration SHA-256 | Seluruh 7 identik sebelum/sesudah | reports/local-migration-hashes-before.json dan after.json |
+| SQL regression runner | 76/76 pass, 0 fail/skipped, 27,920 detik | reports/local-native-test.tap |
+| Auth/JWT/PostgREST HTTP | 17/17 pass, 0 fail, 6,843 detik | reports/local-api-test.json |
+| Lint schema public/private | Exit 0; results kosong; tidak ada warning/error | reports/local-lint.txt |
+| Pemeriksaan akhir database/Auth | Auth HTTP 200; 18 tabel RLS, 9 akun sintetis, 2 institution, 7 migration | reports/local-database-summary.json |
+| Port publik stack | Semuanya 127.0.0.1, bukan 0.0.0.0 | reports/local-runtime.txt |
+
+**Pemisahan mesin test:** 73 dari 76 test SQL benar-benar dijalankan di PostgreSQL native. Tiga pengecualian eksplisit memakai PGlite: replay database bersih, reuse ID Auth fixture, dan upgrade berisi data migration 6 ke 7. Suite SQL mengatur role/klaim database; 17 check HTTP menggunakan JWT asli hasil login Supabase Auth dan koneksi PostgREST terpisah, tanpa Auth shim/fallback embedded.
+
+Cakupan nyata yang lulus:
+
+- Satu identity SANTRI aktif A+B; WALI+USTAZ pada institution sama; WALI A/USTAZ B; tiga role lintas konteks; assignment ADMIN tetap khusus.
+- RLS membatasi SELECT/INSERT/UPDATE/RPC lintas tenant; identity binding dan direktori global terlindungi; assigned teacher/VERIFIED guardian dibatasi konteks yang sah.
+- TEMPORARY/HOLIDAY wajib jadwal valid; awal/akhir dan timezone dipatuhi. Saat scheduled_end_at tercapai, operasi ditolak walaupun status masih ACTIVE dan worker belum dipanggil.
+- Worker hanya service_role, menutup dua enrollment lewat API lalu retry menghasilkan 0. WALI/USTAZ yang valid tetap memiliki akses; ENDED tidak dapat diaktifkan ulang.
+- Suite native membuktikan penutupan awal, pembatalan sebelum mulai, atomic rollback, liburan berikutnya memakai record baru dan identity lama, serta enrollment tenant asal tidak otomatis dicabut.
+- Auth trigger satu profil per akun; role metadata tidak memberi ADMIN; password salah dan JWT palsu ditolak; refresh valid, logout membatalkan refresh session; profile disabled membatasi data meskipun JWT masih ada.
+
+Tidak ada assertion yang gagal pada suite SQL/API. Masalah lingkungan yang ditemukan: PATH sesi belum diperbarui; opsi default binding bridge di Docker Desktop tidak cukup; Vector gagal mengakses Docker logs. Recreate awal gateway kehilangan sertifikat lokal; diperbaiki dengan pemulihan stack dan penyalinan direktori sertifikat pada helper. Test API dijalankan setelah gateway healthy. Re-run helper pada binding yang sudah benar lulus tanpa recreate.
+
+Runtime akhir: layanan inti healthy dan port loopback. Vector sengaja dikecualikan (--exclude vector); pengumpulan log terpusat belum teruji. Fixture HTTP committed tetap tersimpan: sembilan akun sintetis dan dua institution. Tidak ada reset data setelah pengujian. Kredensial tidak disimpan di laporan; raw startup log dihapus setelah mengambil ringkasan aman.
+
+Batas yang belum diuji: scheduler periodik (worker baru dipanggil manual), race/concurrency multikoneksi, upgrade berisi data di native, backup/restore serta staging/production. Hasil ini menuntaskan milestone lokal yang diminta, bukan verifikasi kesiapan production menyeluruh.
+
+Langkah tepat berikutnya: laporkan checkpoint; pekerjaan backend berikutnya scheduler periodik dan concurrency dengan database/fixture lokal terkontrol. Tidak melanjutkan Flutter/UI.
+
+---
+
+## Histori persiapan — Supabase lokal saat itu BLOCKED
+
+Belum ada migration diterapkan pada Supabase nyata dan belum ada assertion Auth/JWT/API/RLS melalui HTTP yang dijalankan. Tidak ada fixture HTTP committed. Hasil embedded di bawah tidak menggantikan integrasi nyata.
+
+| Pemeriksaan | Hasil aktual |
+|---|---|
+| Docker/Podman | Tidak ditemukan |
+| WSL status/list | Belum terpasang |
+| Instalasi WSL dari sesi sekarang | Exit 1, WSL tetap belum terpasang |
+| Virtualisasi | Windows melaporkan firmware virtualization False, hypervisor False, SLAT True |
+| Privilege shell | Bukan Administrator |
+| `supabase start` | Exit 1, LegacyDockerLifecycleInspectError: Docker/Podman tidak ditemukan |
+| Auth health localhost:54321 | ECONNREFUSED |
+| `node --check scripts/test-api.mjs` | Lulus syntax check; bukan bukti integrasi |
+| `node scripts/test-api.mjs` | Exit 2 / BLOCKED: konfigurasi runtime lokal belum tersedia; 0 check, 0 pass, 0 fail |
+| `node scripts/test-postgres.mjs` | Exit 1 sebelum test: URL database lokal belum tersedia |
+
+Runner API baru mempersiapkan 17 skenario HTTP: login/JWT tervalidasi Auth, profil hasil trigger, role metadata tidak memberi ADMIN, password salah/JWT palsu, refresh, anon denial, scope admin tenant, cross-tenant writes, assigned teacher/verified guardian, kombinasi SANTRI/WALI/USTAZ, identity binding, jadwal kedaluwarsa, service-only expiry, histori ENDED, revocation per role, disabled profile, logout/refresh invalidation. Skenario tersebut **belum dieksekusi** terhadap layanan nyata.
+
+Laporan mesin runner: `reports/local-api-test.json`. Runner menolak endpoint nonlokal/database tidak kosong dan tidak melakukan reset otomatis. Auth users dan fixture committed akan ditinggalkan pada database lokal sintetis ketika integrasi benar-benar dijalankan. Password/key/token tidak ditulis ke laporan.
+
+File test berubah: fixture menerima ID hasil real Auth API, ditambah satu regression test embedded untuk jalur reuse ID. Migration 1–7 tidak diubah. Panduan prasyarat dan runbook: `docs/LOCAL_SUPABASE_VERIFY.md`.
+
+Regresi terbaru: **76 tests, 76 pass, 0 fail, 0 skipped**, exit 0; terdiri dari 53 test foundation dan 23 test enrollment. Durasi 29,524 detik. Mesin embedded PGlite; bukti mentah `reports/local-preparation-regression.tap`. Test tambahan membuktikan fixture memakai ulang ID Auth yang telah disediakan tanpa menduplikasi akun.
+
+Langkah berikutnya pada checkpoint historis saat itu: aktifkan virtualisasi firmware, siapkan WSL dan Docker engine, lalu jalankan migration 1–7 serta suite native/API sesuai runbook.
+
+## Histori checkpoint migrasi 7
+
+## Hasil
+
+**75 tests, 75 pass, 0 fail, 0 skipped.** Terdiri dari 52 test foundation existing dan 23 test enrollment/role baru. Mesin: PostgreSQL 18.3 melalui PGlite 0.5.8. Bukti mentah: `reports/migration-7-test.tap`.
+
+| Pemeriksaan | Hasil |
+|---|---|
+| Seluruh suite `node --test --test-reporter=tap --test-concurrency=1 tests/foundation.test.mjs tests/enrollments.test.mjs` | Lulus, exit 0 |
+| `node scripts/check-migrations.mjs` | Lulus: replay tujuh migrasi, 18 tabel dengan RLS aktif |
+| Upgrade database berisi fixture dari migration 6 ke 7 | Lulus: kolom legacy/status/histori dan jumlah audit tidak berubah; tipe existing REGULAR |
+| SHA-256 keenam migration existing | Identik sebelum dan sesudah pekerjaan |
+| `node scripts/test-postgres.mjs` | Terblokir sebelum test: exit 1, `No database URL was provided.` |
+
+Putaran awal 69/69 lulus. Setelah review, ditambahkan pengujian zona waktu, pembatalan sebelum mulai, batas mulai, PENDING kedaluwarsa, rollback atomik, dan batas batch. Putaran final 75/75 lulus. Tidak ada kegagalan assertion pada kedua putaran tersebut.
+
+## Cakupan tambahan
+
+- SANTRI aktif di A/B memakai satu identity, tanpa penutupan otomatis di A.
+- WALI + USTAZ pada lembaga sama; pencabutan link wali tidak mencabut assignment ustaz.
+- WALI A + USTAZ B dengan scope akses terpisah.
+- SANTRI + WALI + USTAZ lintas konteks tanpa akun tambahan atau privilege ADMIN.
+- Pengakhiran assignment ustaz mempertahankan akses wali yang sah.
+- Temporary/holiday wajib periode valid, finite, terurut; tidak ada pasangan start_at/end_at duplikat.
+- Sebelum started_at tidak mendapat akses operasional.
+- Tepat scheduled_end_at dan setelahnya: roster ustaz serta mutasi turunan/pindah kelas ditolak walaupun status tersimpan masih ACTIVE; histori wali tetap tersedia sesuai izin.
+- Zona waktu lembaga dipakai terlepas dari timezone session; diuji Pacific/Kiritimati dan Etc/GMT+12. Zona tidak valid dan pergantian zona ketika jadwal terbuka ditolak.
+- Enrollment kedaluwarsa tidak dapat dihidupkan lewat penggeseran jadwal atau perubahan tipe.
+- Penutupan lebih awal/ulang dan pembatalan rencana sebelum mulai: tanggal aktual di-stamp server, turunan ditutup, audit tidak digandakan.
+- Penutupan manual maupun worker mempertahankan role WALI/USTAZ, guardian link, teacher assignment dan enrollment lembaga lain.
+- Direct UPDATE ENDED tidak melewati penutupan hierarki; histori ENDED tidak bisa direaktivasi atau soft-delete.
+- Worker menutup ACTIVE/PENDING kedaluwarsa, memvalidasi ukuran batch, idempotent, mencatat SYSTEM dan tanggal proses sebenarnya.
+- Kegagalan child closure sintetis me-rollback parent, turunan, dan audit.
+- Liburan berikutnya membuat enrollment/program/class baru dengan identity/profil lokal yang sama.
+- Admin tenant lain, role biasa, dan anon tidak dapat menutup/mengubah/membaca enrollment asing atau memanggil worker service-only.
+
+## Batas verifikasi
+
+Hasil embedded tidak membuktikan integrasi Supabase Auth/JWT/PostgREST atau konfigurasi PostgreSQL 17 native. Runner native sudah mencakup kedua suite, tetapi belum memiliki URL database lokal. Tidak menyalakan Supabase, memasang Docker, menghubungkan project remote, atau menerapkan migration ke remote.
+
+Worker expiry tersedia dan diuji; pemanggilan periodik belum dipasang. Keamanan masa berlaku tidak menunggu worker, tetapi perubahan status tersimpan menjadi ENDED tetap memerlukan worker/command penutupan.
+
+Row locking dan rollback diuji pada embedded satu koneksi; concurrency beberapa koneksi dan scheduler nyata tetap milestone berikutnya. Matching/verifikasi identity otomatis serta consent sharing belum dibangun. Provisioning role/link tetap server-only setelah verifikasi.
+
+## Langkah berikutnya
+
+Laporkan hasil migrasi 7 dan berhenti pada checkpoint ini. Setelah melanjutkan milestone Supabase lokal: apply seluruh migration, jalankan `pnpm test:postgres`, uji Auth/JWT/API dan RLS multi-tenant nyata, pasang/uji worker periodik, uji concurrency, lalu perbarui laporan ini dan IMPLEMENTATION_STATUS.md.

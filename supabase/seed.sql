@@ -1,0 +1,4 @@
+-- Required global program types and roles are inserted by migrations, so they
+-- also exist on deployments that do not run development seeds.
+-- No real accounts, platform administrators, or institution fixtures are seeded.
+-- Synthetic fixture data is created only inside the automated test harness.

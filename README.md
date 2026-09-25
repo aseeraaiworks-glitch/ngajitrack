@@ -1,0 +1,84 @@
+# NgajiTrack — Backend Foundation
+
+Implementasi **Supabase/PostgreSQL saja**, berdasarkan lima dokumen v1.2 dalam `docs/` dan keputusan pengguna. Tidak ada Flutter UI, Personal Mode, Mushaf reader, method engine, progres pembelajaran, Score, kalender, laporan produk, poster, atau pembayaran.
+
+Status lengkap dan langkah melanjutkan ada di [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+
+## Isi proyek
+
+```text
+docs/                       spesifikasi asli + keputusan + panduan operasi
+supabase/config.toml        konfigurasi Supabase lokal
+supabase/migrations/        tujuh migrasi SQL berurutan
+supabase/seed.sql           tanpa akun/data dummy permanen
+tests/                     fixture sintetis, auth shim, matriks keamanan
+scripts/                   pemeriksaan migrasi + runner PostgreSQL native
+reports/                   bukti hasil pengujian implementasi
+```
+
+Tabel inti: `profiles`, `institutions`, `roles`, `institution_members`, `platform_roles`, `student_identities`, `student_profiles`, `teacher_profiles`, `guardian_profiles`, `guardian_students`, `institution_enrollments`, `program_types`, `programs`, `groups`, `program_enrollments`, `group_memberships`, `teacher_assignments`, `audit_logs`.
+
+## Menjalankan test tanpa Docker
+
+Prasyarat: Node.js dan pnpm sesuai `package.json`.
+
+```sh
+pnpm install --frozen-lockfile
+pnpm test
+```
+
+Test memakai PostgreSQL melalui PGlite, membuat database sementara, mereplay migrasi, lalu menjalankan query menggunakan role `authenticated`/`anon`. Auth shim dalam `tests/bootstrap.sql` hanya meniru kontrak `auth.users` dan `auth.uid()`; file itu **bukan migrasi aplikasi**.
+
+## Menjalankan Supabase lokal
+
+Prasyarat tambahan: Docker Desktop yang berjalan. Ikuti [runbook](docs/LOCAL_SUPABASE_VERIFY.md) untuk membuat network loopback dan memperbarui PATH sesi sebelum menjalankan perintah berikut. Helper binding saat ini khusus Windows Docker Desktop.
+
+```sh
+pnpm exec supabase start --network-id ngajitrack-local --exclude vector
+node scripts/bind-local-ports.mjs
+```
+
+Untuk mengulang migrasi dari awal pada database **lokal sekali pakai**:
+
+```sh
+pnpm exec supabase db reset --local
+```
+
+Perintah reset menghapus data lokal. Jangan memakai `--linked` atau URL remote untuk reset.
+
+Setelah database lokal kosong dan migrasi diterapkan, jalankan matriks yang sama pada PostgreSQL Supabase. Ambil konfigurasi lokal di memori; jangan cetak atau simpan output status yang memuat kredensial:
+
+```powershell
+$ngtRuntime = pnpm exec supabase status -o json | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { throw 'Local Supabase is not ready' }
+$env:NGAJITRACK_TEST_DATABASE_URL = $ngtRuntime.DB_URL
+pnpm test:postgres
+Remove-Item Env:NGAJITRACK_TEST_DATABASE_URL
+$ngtRuntime = $null
+```
+
+Runner menolak host nonlokal dan database yang sudah mempunyai profil/lembaga. Fixture berada dalam transaction dan di-rollback; runner native tidak mengubah schema atau membuat auth shim. Satu test replay tetap menggunakan database embedded bersih dan diberi nama demikian.
+
+## Operasi yang tersedia
+
+| Command | Akses | Efek |
+|---|---|---|
+| `create_institution(code,institution_name,kind,admin_profile)` | SUPER_ADMIN | Membuat lembaga dan admin pertama secara atomik |
+| `my_institutions()` | User aktif | Proyeksi terbatas lembaga sesuai membership |
+| `set_institution_status(tenant_id,new_status)` | SUPER_ADMIN | Mengubah status lembaga dengan audit |
+| `move_student_group(enrollment_id,target_group_id)` | Admin tenant | Menutup membership kelas lama dan membuat yang baru; retry ke kelas sama tidak menduplikasi |
+| `soft_delete_record(entity_table,record_id)` | Admin tenant | Soft delete tabel pada allowlist; row tetap tersembunyi dari SELECT |
+| `end_institution_enrollment(enrollment_id,closure_reason)` | Admin tenant | Menutup enrollment dan program/kelas turunannya tanpa mencabut role lain |
+| `expire_institution_enrollments(batch_size)` | Server service_role | Menutup batch enrollment yang melewati scheduled_end_at; runtime scheduler belum dipasang |
+
+CRUD administratif lain memakai tabel public dengan grant dan RLS. Akun/identity binding, platform-role provisioning, serta pembuatan membership dilakukan server tepercaya setelah verifikasi. `service_role` tidak boleh dipakai client.
+
+## Batas hasil verifikasi
+
+Checkpoint terbaru: Supabase lokal **LULUS**, migration 1–7 applied pada PostgreSQL 17.6. Suite SQL 76/76 (73 native + 3 embedded eksplisit), Auth/JWT/PostgREST nyata 17/17, lint tanpa temuan. Port lokal terikat 127.0.0.1; Vector dikecualikan karena masalah sumber log Docker. Prasyarat dan urutan verifikasi ada di [docs/LOCAL_SUPABASE_VERIFY.md](docs/LOCAL_SUPABASE_VERIFY.md). Status runner API tersimpan di `reports/local-api-test.json`.
+
+Matriks embedded terbaru: 76/76 test lulus, termasuk migrasi 7 dan upgrade berisi data dari migrasi 6; lihat `TEST_REPORT.md`. `reports/TEST_RESULTS.md` menyimpan hasil checkpoint enam migrasi sebelumnya. Supabase lokal kini berjalan; database berisi fixture API sintetis sehingga test ulang membutuhkan pemeriksaan/penyiapan instance lokal kosong. Tidak ada migrasi staging/production. Scheduler periodik, concurrency multikoneksi dan backup/restore masih belum teruji.
+
+Panduan bootstrap, recovery, dan batas izin ada di [docs/OPERATIONS.md](docs/OPERATIONS.md). Perbedaan terencana dari spesifikasi tercatat di [docs/FOUNDATION_DECISIONS.md](docs/FOUNDATION_DECISIONS.md).
+
+Laporan mentah dalam reports/ adalah artefak lokal yang dikecualikan dari Git. Ringkasan hasil pengujian yang dapat dibagikan tersedia di TEST_REPORT.md.

@@ -1,0 +1,65 @@
+# Dependencies, generated output and local editor/cache state
+node_modules/
+.pnpm-store/
+.cache/
+coverage/
+dist/
+build/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+*.swp
+*.bak
+
+# Environment and credential files (including .env.example)
+.env
+.env.*
+*.env
+*.env.*
+.envrc
+.npmrc
+.netrc
+.git-credentials
+credentials.json
+credentials.*.json
+secrets/
+.secrets/
+secrets.*
+*.secret
+*.secrets
+*.local
+
+# Private keys and signing material
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+id_rsa*
+id_ed25519*
+signing_keys.json
+signing_keys.*.json
+service-account*.json
+service_account*.json
+
+# Supabase local runtime and database backups
+supabase/.temp/
+supabase/.branches/
+supabase/.env*
+supabase/.volumes/
+supabase/volumes/
+supabase/backups/
+*.dump
+*.backup
+*.sqlite
+*.sqlite3
+
+# Generated reports/logs may contain local paths or runtime data
+/reports/
+test-results/
+playwright-report/
+*.log
+*.tap

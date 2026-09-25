@@ -1,0 +1,17 @@
+{
+  "name": "ngajitrack-backend-foundation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-concurrency=1 tests/foundation.test.mjs tests/enrollments.test.mjs",
+    "test:postgres": "node scripts/test-postgres.mjs",
+    "test:api": "node scripts/test-api.mjs"
+  },
+  "packageManager": "pnpm@11.19.0",
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "pg": "8.23.0",
+    "supabase": "2.117.0"
+  }
+}

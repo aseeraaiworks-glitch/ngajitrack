@@ -1,5 +1,9 @@
 # Audit sebelum publikasi Git
 
+## Checkpoint migration 9–10
+
+Scope final: dua migration, harness/test, kontrak dan dokumentasi. Credential lab dibuat acak di memori/environment proses; token invitation hanya hash dalam tabel private, tidak masuk audit. Client tidak mendapat service_role, issuance atau global binding permission. RLS dan explicit function grants diperiksa pada lab dan utama. `.env*`, keys, reports, cache, node_modules, local runtime dan log tetap dikecualikan. Audit staged sebelum commit memeriksa token/key/private-key/credential-URL serta daftar path; hasil final: 53 file index, 0 temuan pola secret, 0 pelanggaran path, 9 probe ignore lulus. Repository GitHub terverifikasi private dengan izin push. Tidak ada secret baru yang sengaja disimpan pada source.
+
 Tanggal: 2026-09-25. Scope: file calon initial commit NgajiTrack; tidak mengubah logic backend.
 
 ## Hasil

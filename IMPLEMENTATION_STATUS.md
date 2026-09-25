@@ -1,5 +1,27 @@
 # Status implementasi NgajiTrack
 
+## Hardening 4–5 — upgrade native, approval dan provisioning selesai (2026-09-25)
+
+Checkpoint ini menggantikan langkah berikutnya pada bagian histori di bawah.
+
+- Migration 9 (20260925000900_enrollment_approvals.sql) dan 10 (20260925001000_verified_provisioning.sql) telah applied pada Supabase lokal utama melalui migration up --local. History lengkap 1–10; migration 1–8 tidak diubah. Tidak ada apply remote/cloud.
+- Default temporary/holiday: WALI VERIFIED. Admin B memilih eksplisit WALI, LEMBAGA_A, WALI+LEMBAGA_A, atau NONE. Program mewarisi dan hanya memperketat; penggabungan persyaratan juga mencegah override lama melemahkan pengetatan lembaga.
+- Request/decision disimpan private, RLS aktif, tidak ada direct grant kepada client atau service_role. RPC terbatas memeriksa tenant dan actor; approval A memerlukan admin berwenang pada satu asal dengan enrollment operasional identity yang sama. Approval wali memakai hubungan VERIFIED dan membership aktif; diperiksa ulang sebelum aktivasi. Proyeksi approver tidak membuka histori tenant lain.
+- ACTIVE temporary/holiday existing dipertahankan sebagai LEGACY_APPROVAL_EXCEPTION yang diaudit, bukan approval buatan; data enrollment dan histori ENDED tidak ditulis ulang. Exception program tidak berlaku untuk record program baru, termasuk di program yang sama.
+- Perubahan konteks/tanggal PENDING membatalkan request lama, termasuk bila nilai dikembalikan. Konteks ACTIVE dibekukan: tutup record lama dan buat record baru dengan approval baru. Ini mempertahankan immutability tujuan/program existing. Penutupan tidak mencabut role lain atau enrollment A.
+- Provisioning tersedia melalui RPC server-only untuk issuance/verifikasi binding dan RPC recipient-bound untuk redeem. Token acak sekali pakai, hash SHA-256, expiry terbatas; membership/binding/consume/audit atomik. Replay, penerima salah, expiry, revocation, dan rollback kegagalan diuji. ADMIN harus diminta eksplisit; SUPER_ADMIN tidak dapat diprovision lewat invitation.
+- Kontrak client: docs/BACKEND_CONTRACT.md mencakup operasi/signature, response/error native PostgREST, scope role, transisi approval, provisioning tepercaya, serta larangan service_role di client.
+- Test final: native upgrade/approval 20/20; foundation 53/53 (51 native di schema 1–10 + 2 test embedded historis yang eksplisit); Auth/JWT/PostgREST workflow 18/18; primary read-only verification 8/8. Lint public/private exit 0 tanpa temuan. Tidak ada failure/skipped pada hasil final.
+- Upgrade native dimulai dari migration 6 berisi fixture, dilanjutkan 7, 8, 9, 10; kolom/status/tanggal existing dipertahankan, REGULAR default benar, ACTIVE legacy/ENDED tetap utuh. Auth/PostgREST memakai container terpisah dengan JWT login asli, bukan JWT fabrikasi.
+- Fixture utama public/auth.users, kebijakan RLS produk, serta job cron 15 menit/batch 500 identik sebelum/sesudah apply. Role scheduler tetap hanya EXECUTE worker expiry, tanpa CRUD atau administrative workflow. Main memiliki dua REGULAR ACTIVE dan dua temporary/holiday ENDED; tidak memerlukan audit exception tambahan.
+- Pengembangan menemukan search_path koneksi Auth lab membuat history migrasi tidak terbaca; diperbaiki pada koneksi lab ke schema auth. Review akhir menutup reuse legacy exception untuk record program baru; regression tambahan lulus. Tidak mengubah konfigurasi Auth utama atau HBA.
+- File baru: dua migration; scripts/auth-api-lab.mjs, test-approval-upgrade.mjs, test-workflow-api.mjs, test-workflow-regression.mjs, verify-workflow-local.mjs; docs/BACKEND_CONTRACT.md. File diperbarui: scripts/scheduler-lab.mjs (parameter versi awal), package.json, README.md, docs/HARDENING.md, docs/FOUNDATION_DECISIONS.md, docs/LOCAL_SUPABASE_VERIFY.md, IMPLEMENTATION_STATUS.md, TEST_REPORT.md, SECURITY_AUDIT.md.
+- Bukti lokal diabaikan Git: reports/workflow-upgrade.txt, workflow-api.txt, workflow-foundation.txt, workflow-primary.txt, workflow-primary-before.json, workflow-lint.txt.
+- Batas: pengiriman email/SMS dan UI verifikasi tidak dibuat; server/operator tetap wajib membuktikan kepemilikan identitas sebelum memanggil RPC verified. Service_role tetap server-only. Tidak ada staging/production, backup/restore, portable history sharing, Web Admin atau Flutter UI. Verifikasi utama SQL/RLS + health/anon read-only; skenario login/provisioning HTTP mutatif dijalankan pada lab terpisah agar fixture utama utuh.
+- Audit Git final: 53 file index dipindai, 0 temuan pola secret, 0 path terlarang; 9 probe ignore lulus. Repository target terverifikasi private dengan izin push; migration 1–8 unchanged. Publikasi melalui commit main tanpa force; hash/status push dilaporkan setelah verifikasi remote.
+- Langkah tepat berikutnya: laporkan hasil checkpoint, hash commit, status push dan working tree, lalu berhenti. Tidak mulai milestone berikutnya.
+
+
 ## Hardening 3 — scheduler expiry selesai (2026-09-25)
 
 - Migration baru: supabase/migrations/20260925000800_expiry_scheduler.sql, sudah applied pada Supabase lokal utama. Migration 1–7 tidak berubah (SHA-256 identik). Tidak ada migration remote/cloud applied.

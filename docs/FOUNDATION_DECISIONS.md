@@ -31,3 +31,12 @@ Sumber produk: kelima dokumen v1.2 di direktori ini. Instruksi eksplisit penggun
 24. Tidak membuka sharing histori atau direktori identity lintas tenant. Consent/portable summary dan pricing/billing tetap di luar scope. Semua enam migration sebelumnya dipertahankan; perubahan hanya melalui forward migration 7.
 
 Rujukan teknis: [Supabase migrations](https://supabase.com/docs/guides/local-development/database-migrations), [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [PGlite](https://pglite.dev/docs/).
+
+## Keputusan disetujui — migration 9–10 (2026-09-25)
+
+25. Default persetujuan temporary/holiday WALI VERIFIED; NONE hanya konfigurasi eksplisit admin tujuan. Program mewarisi dan hanya memperketat kebijakan lembaga; tidak ada override untuk melonggarkan.
+26. B membuat enrollment/periode. A hanya satu asal terverifikasi dengan identity yang sama; persetujuan diberikan admin A yang masih berwenang. Approval wali membutuhkan hubungan VERIFIED dan membership aktif. Tidak membuka histori lintas lembaga.
+27. PENDING baru/existing mengikuti guard approval. Perubahan konteks PENDING membatalkan request lama. ACTIVE yang berubah konteks ditutup lalu dibuat record baru untuk approval ulang, mempertahankan ownership/history immutable. Approval aktif dicabut melalui penutupan terotorisasi.
+28. Temporary/holiday ACTIVE sebelum upgrade mendapat exception legacy yang diaudit, bukan approval buatan. Tidak memutus akses sah sampai closure/expiry. Exception program hanya untuk record existing; record program baru harus mengikuti approval. ENDED tetap utuh.
+29. Provisioning dan binding melalui trusted server yang memverifikasi bukti, kemudian invitation recipient-bound dengan token sekali pakai/expiry/hash. Redeem atomik, diaudit, tidak membuat identity baru untuk role/tenant tambahan. Role ADMIN eksplisit; service_role tidak berada di client. Pengiriman email/SMS dan UI verifikasi belum diimplementasikan.
+30. Poin 23 merupakan histori sebelum scheduler: worker sekarang juga dapat dijalankan role scheduler khusus migration 8, interval 15 menit/batch 500. Private workflow migration 9–10 tidak memberi akses tambahan kepada scheduler.

@@ -4,7 +4,7 @@ import {setTimeout} from 'node:timers/promises';
 import {readFile,readdir} from 'node:fs/promises';
 import pg from 'pg';
 import {root,localRuntime,fingerprint} from './local-sandbox.mjs';
-export async function schedulerLab(){
+export async function schedulerLab({through='20260924000700'}={}){
  const source=new pg.Client({connectionString:localRuntime().toString()});await source.connect();const before=await fingerprint(source);
  const name='ngt-scheduler-test-'+randomBytes(6).toString('hex');let id,db;
  const docker=(args,options={})=>execFileSync('docker',args,{encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:8*1024*1024,...options});
@@ -19,7 +19,7 @@ export async function schedulerLab(){
   const config={host:'127.0.0.1',port:Number(port),database:'postgres',user:'postgres',password,connectionTimeoutMillis:3000};
   db=new pg.Client(config);await db.connect();
   let auth=docker(['exec','supabase_db_ngajitrack','pg_dump','-U','postgres','-d','postgres','--schema=auth','--schema-only','--no-owner','--no-privileges']);auth=auth.replace(/^CREATE TRIGGER on_auth_user_created[^\r\n]*[\r\n]*/m,'');sql(auth);
-  const files=(await readdir(new URL('supabase/migrations/',root))).filter(f=>f.endsWith('.sql')&&f.slice(0,14)<='20260924000700').sort();for(const f of files)await db.query(await readFile(new URL('supabase/migrations/'+f,root),'utf8'));
+  const files=(await readdir(new URL('supabase/migrations/',root))).filter(f=>f.endsWith('.sql')&&f.slice(0,14)<=through).sort();for(const f of files)await db.query(await readFile(new URL('supabase/migrations/'+f,root),'utf8'));
   return {name,db,query:(s,p)=>db.query(s,p),exec:s=>db.query(s),config,async connect(){const c=new pg.Client(config);await c.connect();return c;},async close(){await db.end();docker(['rm','--force','--volumes',id]);const after=await fingerprint(source);await source.end();if(before!==after)throw Error('Primary fixture changed');console.log('Primary fixture unchanged; isolated container removed');}};
  }catch(e){if(db)await db.end();if(id)docker(['rm','--force','--volumes',id]);await source.end();throw e;}
 }

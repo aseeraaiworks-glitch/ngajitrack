@@ -9,7 +9,11 @@
     "test:api": "node scripts/test-api.mjs",
     "test:isolated": "node scripts/test-isolated.mjs",
     "test:concurrency": "node --test --test-concurrency=1 tests/concurrency.test.mjs",
-    "test:scheduler": "node scripts/test-scheduler.mjs"
+    "test:scheduler": "node scripts/test-scheduler.mjs",
+    "test:upgrade": "node scripts/test-approval-upgrade.mjs",
+    "test:workflow-api": "node scripts/test-workflow-api.mjs",
+    "test:workflow-sql": "node scripts/test-workflow-regression.mjs",
+    "verify:workflow-local": "node scripts/verify-workflow-local.mjs"
   },
   "packageManager": "pnpm@11.19.0",
   "devDependencies": {

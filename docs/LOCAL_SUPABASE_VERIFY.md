@@ -1,3 +1,5 @@
+> Checkpoint aktif migration 1–10: gunakan docs/HARDENING.md dan docs/BACKEND_CONTRACT.md. Runbook di bawah adalah histori gate migration 1–7. Runner API lama menggunakan fixture kosong dan perilaku tanpa approval; jangan memakainya pada instance utama saat ini.
+
 # Melanjutkan verifikasi Supabase lokal
 
 Scope tetap backend foundation. Tidak ada Flutter/UI. Seluruh langkah memakai project lokal NgajiTrack; jangan memakai --linked atau kredensial cloud.

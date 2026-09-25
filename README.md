@@ -4,12 +4,29 @@ Implementasi **Supabase/PostgreSQL saja**, berdasarkan lima dokumen v1.2 dalam `
 
 Status lengkap dan langkah melanjutkan ada di [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
+## Checkpoint aktif — migration 1–10
+
+Migration approval dan provisioning telah applied lokal. Kontrak Web Admin/Flutter ada di [BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md); UI belum dibuat.
+
+Runner final yang dapat diulang tanpa reset fixture utama:
+
+```sh
+pnpm test:upgrade
+pnpm test:workflow-sql
+pnpm test:workflow-api
+pnpm verify:workflow-local
+```
+
+Verifier lokal memerlukan baseline yang sudah diambil sebelum apply; lihat [HARDENING.md](docs/HARDENING.md). Hasil: 20/20 upgrade, 53/53 foundation (51 native + 2 embedded), 18/18 Auth/API, 8/8 primary verification; lint bersih.
+
+Perintah test/postgres/api lama di bagian historis berikut menguji kontrak migration 1–7 dan tidak membuktikan approval baru. Jangan menjalankan runner API lama terhadap instance utama atau menganggap test temporary lama kompatibel dengan guard migration 9. Gunakan tiga runner workflow di atas untuk kontrak saat ini; tidak perlu db reset.
+
 ## Isi proyek
 
 ```text
 docs/                       spesifikasi asli + keputusan + panduan operasi
 supabase/config.toml        konfigurasi Supabase lokal
-supabase/migrations/        delapan migrasi SQL berurutan
+supabase/migrations/        sepuluh migrasi SQL berurutan
 supabase/seed.sql           tanpa akun/data dummy permanen
 tests/                     fixture sintetis, auth shim, matriks keamanan
 scripts/                   pemeriksaan migrasi + runner PostgreSQL native

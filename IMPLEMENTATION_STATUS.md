@@ -1,5 +1,12 @@
 # Status implementasi NgajiTrack
 
+## Hardening 3 — menunggu keputusan scheduler (2026-09-25)
+
+Inspeksi read-only: pg_cron tersedia/preloaded tetapi belum diaktifkan. Pemasangan yang diusulkan menambah extension/schema cron dan job SQL otomatis dengan konfigurasi privilege baru; sesuai instruksi pengguna, implementasi dihentikan sebelum perubahan schema/security tersebut. Usulan konkret: docs/SCHEDULER_PROPOSAL.md (migration 8 operasional, job owner postgres, SET LOCAL ROLE service_role, setiap menit, batch 100, tanpa grant client baru).
+
+Tidak ada test scheduler periodik dijalankan; bukan PASS. Tidak ada migration/extension/job baru dibuat atau applied. Milestone 1 selesai (dua putaran 76/76); milestone 2 selesai (6/6). Fixture utama tetap identik. Milestone 4 upgrade native berisi data dan milestone 5 kontrak client belum dikerjakan, menunggu kelanjutan urutan. File berubah checkpoint keputusan: docs/SCHEDULER_PROPOSAL.md, IMPLEMENTATION_STATUS.md, TEST_REPORT.md. Langkah tepat berikutnya: pengguna menyetujui atau mengubah usulan scheduler.
+
+
 ## Hardening 2 — concurrency native (2026-09-25)
 
 Selesai: 6/6 test multikoneksi PostgreSQL lulus. Dua worker membagi batch tanpa closure/audit ganda; worker melewati root terkunci admin; admin menunggu worker atau admin lain lalu idempotent; perpindahan kelas setelah closure ditolak; closure yang menunggu perpindahan kelas menutup placement baru. Overlap dibuktikan lewat pg_stat_activity wait_event_type=Lock, bukan urutan panggilan semata. Fixture utama identik sesudah setiap skenario. Bukti lokal: reports/hardening-concurrency.txt.

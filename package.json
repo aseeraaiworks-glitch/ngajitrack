@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test --test-concurrency=1 tests/foundation.test.mjs tests/enrollments.test.mjs",
     "test:postgres": "node scripts/test-postgres.mjs",
-    "test:api": "node scripts/test-api.mjs"
+    "test:api": "node scripts/test-api.mjs",
+    "test:isolated": "node scripts/test-isolated.mjs"
   },
   "packageManager": "pnpm@11.19.0",
   "devDependencies": {

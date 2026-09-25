@@ -8,7 +8,8 @@
     "test:postgres": "node scripts/test-postgres.mjs",
     "test:api": "node scripts/test-api.mjs",
     "test:isolated": "node scripts/test-isolated.mjs",
-    "test:concurrency": "node --test --test-concurrency=1 tests/concurrency.test.mjs"
+    "test:concurrency": "node --test --test-concurrency=1 tests/concurrency.test.mjs",
+    "test:scheduler": "node scripts/test-scheduler.mjs"
   },
   "packageManager": "pnpm@11.19.0",
   "devDependencies": {

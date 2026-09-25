@@ -11,7 +11,7 @@ export async function fingerprint(client){
  const tables=(await client.query("select schemaname,tablename from pg_tables where schemaname='public' or (schemaname='auth' and tablename='users') order by 1,2")).rows;
  const hash=createHash('sha256');for(const t of tables){const name=`"${t.schemaname}"."${t.tablename}"`;const r=await client.query(`select md5(coalesce(string_agg(row_to_json(t)::text,E'\\n' order by row_to_json(t)::text),'')) hash from ${name} t`);hash.update(name+r.rows[0].hash);}return hash.digest('hex');
 }
-export async function sandbox({through=null}={}){
+export async function sandbox({through='20260924000700'}={}){
  const base=localRuntime(),admin=new pg.Client({connectionString:base.toString()});await admin.connect();
  const before=await fingerprint(admin),name='ngt_test_'+randomUUID().replaceAll('-','');let db;
  try{

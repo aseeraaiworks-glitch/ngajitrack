@@ -1,11 +1,22 @@
 # Laporan pengujian backend foundation
 
-## Hardening 3 — menunggu keputusan scheduler (2026-09-25)
+## Hardening 3 — scheduler expiry selesai (2026-09-25)
 
-Inspeksi read-only: pg_cron tersedia/preloaded tetapi belum diaktifkan. Pemasangan yang diusulkan menambah extension/schema cron dan job SQL otomatis dengan konfigurasi privilege baru; sesuai instruksi pengguna, implementasi dihentikan sebelum perubahan schema/security tersebut. Usulan konkret: docs/SCHEDULER_PROPOSAL.md (migration 8 operasional, job owner postgres, SET LOCAL ROLE service_role, setiap menit, batch 100, tanpa grant client baru).
+- Migration baru: supabase/migrations/20260925000800_expiry_scheduler.sql, sudah applied pada Supabase lokal utama. Migration 1–7 tidak berubah (SHA-256 identik). Tidak ada migration remote/cloud applied.
+- Satu job aktif ngajitrack-expire-enrollments, interval 15 menit, batch 500. Execution role ngt_expiry_scheduler memakai worker existing; tidak SET ROLE service_role dan tidak mengubah worker/tabel/RLS produk.
+- Role LOGIN tanpa password diperlukan pg_cron, menggunakan koneksi loopback internal yang sudah ada. Tidak mengubah HBA atau membuka trust baru. Login melalui port database publik ditolak; tidak memiliki SUPERUSER/BYPASSRLS/CREATEROLE/CREATEDB, membership role lain, CRUD tabel produk, atau akses pengelolaan cron. Client tidak dapat mengasumsikan role tersebut atau memanggil worker/cron.
+- PostgreSQL memberi operator pembuat role (postgres) ADMIN-only membership otomatis, dengan SET=false dan INHERIT=false. Ini hak administrasi operator atas role, bukan privilege scheduler. Pemeriksaan migration menerima hanya bentuk tersebut; client/member lain tetap ditolak.
+- Pembuktian mekanisme role terlebih dahulu lulus di container terpisah; migration 8 baru dibuat sesudah pembuktian. Scheduler final 13/13 lulus; verifikasi instance utama 8/8 lulus, termasuk replay migration transaksional oleh operator non-superuser.
+- Eksekusi periodik nyata, rollback kegagalan/retry, duplikasi/no-op, akses saat scheduler terlambat, batas batch, serta backlog 1.101 dengan hasil 500,500,101,0 lulus. Audit closure tepat satu per enrollment. Interval test dipercepat 1 detik hanya di lab/probe; job utama tetap 15 menit.
+- Probe cron sementara di instance utama benar-benar berhasil sebagai role khusus, kemudian di-unschedule. Tidak ada probe job tersisa. Kondisi probe mensyaratkan nol fixture jatuh tempo; worker mengembalikan 0. Fingerprint seluruh data public/auth.users dan kebijakan RLS/grant tabel produk sebelum/sesudah identik.
+- Regresi foundation sebelumnya 76/76 (73 native + 3 embedded) dan concurrency 6/6 lulus pada perubahan runner; tidak diulang tanpa alasan pada kelanjutan apply. Scheduler 13/13 diulang setelah penyesuaian pemeriksaan operator. Lint public/private setelah apply: exit 0 tanpa temuan.
+- Apply pertama gagal pada assertion membership operator dan rollback utuh: tidak ada role/extension/migration 8 yang tertinggal. Setelah koreksi assertion, uji instalasi aktual dalam transaksi + rollback lulus, apply kedua berhasil. Kesalahan awal harness/sintaks saat pengembangan diperbaiki; hasil final tidak memiliki kegagalan.
+- Bukti lokal (diabaikan Git): reports/scheduler-role-proof.txt, scheduler-test.txt, scheduler-foundation-regression.txt, scheduler-concurrency-regression.txt, scheduler-apply.txt, scheduler-local-verification.json, scheduler-primary-periodic.json, scheduler-lint.txt, scheduler-migrations.json.
+- File berubah: migration 8; scripts/scheduler-lab.mjs, prove-scheduler-role.mjs, test-scheduler.mjs, verify-scheduler-local.mjs, probe-scheduler-local.mjs; scripts/local-sandbox.mjs, tests/database.mjs, package.json; docs/SCHEDULER_PROPOSAL.md, docs/HARDENING.md, README.md; IMPLEMENTATION_STATUS.md dan TEST_REPORT.md.
+- Batas: cron diuji nyata dengan interval dipercepat; belum menunggu satu siklus penuh 15 menit di utama. Timeout role 60 detik, lock timeout 5 detik; kegagalan dicatat cron.job_run_details dan dicoba pada run berikutnya. Monitoring/retensi log cron operasional masih manual. Konfigurasi autentikasi scheduler pada staging/cloud harus diverifikasi tersendiri.
+- Langkah tepat berikutnya: laporkan milestone ini dan berhenti. Milestone 4 (upgrade native berisi data), milestone 5 (kontrak client), Web Admin dan Flutter tidak dikerjakan.
 
-Tidak ada test scheduler periodik dijalankan; bukan PASS. Tidak ada migration/extension/job baru dibuat atau applied. Milestone 1 selesai (dua putaran 76/76); milestone 2 selesai (6/6). Fixture utama tetap identik. Milestone 4 upgrade native berisi data dan milestone 5 kontrak client belum dikerjakan, menunggu kelanjutan urutan. File berubah checkpoint keputusan: docs/SCHEDULER_PROPOSAL.md, IMPLEMENTATION_STATUS.md, TEST_REPORT.md. Langkah tepat berikutnya: pengguna menyetujui atau mengubah usulan scheduler.
-
+## Histori checkpoint sebelumnya
 
 ## Hardening 2 — concurrency native (2026-09-25)
 

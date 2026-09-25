@@ -9,7 +9,7 @@ Status lengkap dan langkah melanjutkan ada di [IMPLEMENTATION_STATUS.md](IMPLEME
 ```text
 docs/                       spesifikasi asli + keputusan + panduan operasi
 supabase/config.toml        konfigurasi Supabase lokal
-supabase/migrations/        tujuh migrasi SQL berurutan
+supabase/migrations/        delapan migrasi SQL berurutan
 supabase/seed.sql           tanpa akun/data dummy permanen
 tests/                     fixture sintetis, auth shim, matriks keamanan
 scripts/                   pemeriksaan migrasi + runner PostgreSQL native
@@ -69,7 +69,7 @@ Runner menolak host nonlokal dan database yang sudah mempunyai profil/lembaga. F
 | `move_student_group(enrollment_id,target_group_id)` | Admin tenant | Menutup membership kelas lama dan membuat yang baru; retry ke kelas sama tidak menduplikasi |
 | `soft_delete_record(entity_table,record_id)` | Admin tenant | Soft delete tabel pada allowlist; row tetap tersembunyi dari SELECT |
 | `end_institution_enrollment(enrollment_id,closure_reason)` | Admin tenant | Menutup enrollment dan program/kelas turunannya tanpa mencabut role lain |
-| `expire_institution_enrollments(batch_size)` | Server service_role | Menutup batch enrollment yang melewati scheduled_end_at; runtime scheduler belum dipasang |
+| `expire_institution_enrollments(batch_size)` | Server service_role atau role expiry khusus | Menutup batch enrollment jatuh tempo; cron role khusus menjalankan batch 500 setiap 15 menit |
 
 CRUD administratif lain memakai tabel public dengan grant dan RLS. Akun/identity binding, platform-role provisioning, serta pembuatan membership dilakukan server tepercaya setelah verifikasi. `service_role` tidak boleh dipakai client.
 
@@ -77,8 +77,10 @@ CRUD administratif lain memakai tabel public dengan grant dan RLS. Akun/identity
 
 Checkpoint terbaru: Supabase lokal **LULUS**, migration 1–7 applied pada PostgreSQL 17.6. Suite SQL 76/76 (73 native + 3 embedded eksplisit), Auth/JWT/PostgREST nyata 17/17, lint tanpa temuan. Port lokal terikat 127.0.0.1; Vector dikecualikan karena masalah sumber log Docker. Prasyarat dan urutan verifikasi ada di [docs/LOCAL_SUPABASE_VERIFY.md](docs/LOCAL_SUPABASE_VERIFY.md). Status runner API tersimpan di `reports/local-api-test.json`.
 
-Matriks embedded terbaru: 76/76 test lulus, termasuk migrasi 7 dan upgrade berisi data dari migrasi 6; lihat `TEST_REPORT.md`. `reports/TEST_RESULTS.md` menyimpan hasil checkpoint enam migrasi sebelumnya. Supabase lokal kini berjalan; database berisi fixture API sintetis sehingga test ulang membutuhkan pemeriksaan/penyiapan instance lokal kosong. Tidak ada migrasi staging/production. Scheduler periodik, concurrency multikoneksi dan backup/restore masih belum teruji.
+Matriks embedded terbaru: 76/76 test lulus, termasuk migrasi 7 dan upgrade berisi data dari migrasi 6; lihat `TEST_REPORT.md`. `reports/TEST_RESULTS.md` menyimpan hasil checkpoint enam migrasi sebelumnya. Supabase lokal kini berjalan; database berisi fixture API sintetis sehingga test ulang membutuhkan pemeriksaan/penyiapan instance lokal kosong. Tidak ada migrasi staging/production. Scheduler periodik dan enam interleaving concurrency sudah diuji; backup/restore belum teruji.
 
 Panduan bootstrap, recovery, dan batas izin ada di [docs/OPERATIONS.md](docs/OPERATIONS.md). Perbedaan terencana dari spesifikasi tercatat di [docs/FOUNDATION_DECISIONS.md](docs/FOUNDATION_DECISIONS.md).
 
 Laporan mentah dalam reports/ adalah artefak lokal yang dikecualikan dari Git. Ringkasan hasil pengujian yang dapat dibagikan tersedia di TEST_REPORT.md.
+
+Checkpoint scheduler: migration 8 applied lokal; 13/13 test scheduler dan 8/8 verifikasi utama lulus. Lihat docs/SCHEDULER_PROPOSAL.md dan docs/HARDENING.md. Upgrade native berisi data dan kontrak client belum dikerjakan.

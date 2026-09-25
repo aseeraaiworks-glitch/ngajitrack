@@ -20,7 +20,8 @@ export async function createDatabase({embedded=false,through=null}={}) {
   }
   const db = new PGlite();
   await db.exec(await readFile(new URL('tests/bootstrap.sql',root),'utf8'));
-  const migrations = (await readdir(new URL('supabase/migrations/',root))).filter(x=>x.endsWith('.sql') && (!through || x.slice(0,14)<=through)).sort();
+  // PGlite cannot load pg_cron; migration 8 is tested on a real isolated cluster.
+  const migrations = (await readdir(new URL('supabase/migrations/',root))).filter(x=>x.endsWith('.sql') && x.slice(0,14)<='20260924000700' && (!through || x.slice(0,14)<=through)).sort();
   try {
     for (const file of migrations) {
       await db.exec('begin');

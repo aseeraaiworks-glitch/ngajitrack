@@ -1,5 +1,10 @@
 # Kontrak backend Web Admin dan Flutter
 
+## Addendum Migration 11 (2026-09-26)
+
+Struktur akademik, learning type jamak, governance satu Mudir aktif, scope Wakil dan inheritance konfigurasi telah ditambahkan. Kontrak RPC/permission serta batas operasional terbaru ada di [MIGRATION_11.md](MIGRATION_11.md). Approval/provisioning STANDARD existing di bawah tetap berlaku; leadership tidak otomatis mendapat approval WALI atau Admin. Migration 1–10 tidak diubah.
+
+
 Versi kontrak: migration 1–10. Dokumen ini tidak mengimplementasikan UI atau mengklaim deployment production.
 
 ## Transport dan identitas

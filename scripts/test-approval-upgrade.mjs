@@ -24,6 +24,7 @@ try{
  await s.query("select cron.alter_job(jobid,active:=false) from cron.job");
  await apply('20260925000900_enrollment_approvals.sql');
  await apply('20260925001000_verified_provisioning.sql');
+ await apply('20260926001100_academic_governance.sql');
  await check('native upgrade preserves every existing enrollment including ENDED',async()=>assert.deepEqual((await s.query('select row_to_json(e) value from public.institution_enrollments e order by id')).rows,before));
  await check('legacy ACTIVE exception audited once, no invented decisions',async()=>{assert.equal((await s.query('select count(*)::int n from private.enrollment_legacy_exceptions')).rows[0].n,1);assert.equal((await s.query("select count(*)::int n from public.audit_logs where action='LEGACY_APPROVAL_EXCEPTION'")).rows[0].n,1);assert.equal((await s.query('select count(*)::int n from private.enrollment_approval_decisions')).rows[0].n,0);});
  await check('legacy access remains valid; edits/reset cannot bypass new approvals',async()=>{assert.equal((await s.query('select private.enrollment_operational($1) ok',[f.ie.b1.id])).rows[0].ok,true);await denied('adminB',"update public.institution_enrollments set scheduled_end_at=scheduled_end_at+1 where id=$1",[f.ie.b1.id]);await denied('adminB',"update public.institution_enrollments set status='PENDING' where id=$1",[f.ie.b1.id]);});

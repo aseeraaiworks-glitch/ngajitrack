@@ -23,7 +23,7 @@ try{
   sessions[who]=await request(api.auth,'/token?grant_type=password',{body:{email:credentials.email,password:credentials.password}});
  }
  const f=await makeFixture(s,{authUsers});
- for(const file of ['20260925000800_expiry_scheduler.sql','20260925000900_enrollment_approvals.sql','20260925001000_verified_provisioning.sql']){
+ for(const file of ['20260925000800_expiry_scheduler.sql','20260925000900_enrollment_approvals.sql','20260925001000_verified_provisioning.sql','20260926001100_academic_governance.sql']){
   await s.query('begin');try{await s.query(await readFile(new URL('supabase/migrations/'+file,root),'utf8'));await s.query('commit');}catch(e){await s.query('rollback');throw e;}
  }
  await s.query("select cron.alter_job(jobid,active:=false) from cron.job; notify pgrst,'reload schema'");await setTimeout(1200);
@@ -80,6 +80,49 @@ try{
   const fresh=await request(api.auth,'/token?grant_type=refresh_token',{body:{refresh_token:sessions.outsider.refresh_token}});
   assert.equal(typeof fresh.access_token,'string');await request(api.auth,'/logout',{method:'POST',token:fresh.access_token,status:204});
   await s.query('update public.profiles set is_active=false where id=$1',[f.profiles.outsider]);assert.deepEqual(await rest('outsider','/institution_members'),[]);
+ });
+ await s.query('update public.profiles set is_active=true where id=$1',[f.profiles.outsider]);
+ const governance=await rpc('adminA','request_mudir_case',{tenant_id:f.institutions.A,recipient_profile_id:f.profiles.outsider,purpose:'ONBOARDING',reason:'Synthetic verified institutional onboarding'});
+ await check('HTTP governance requires platform verification before leadership issuance',async()=>{
+  await rpc('adminA','invite_leadership',{tenant_id:f.institutions.A,recipient_profile_id:f.profiles.outsider,role_code:'MUDIR',case_id:governance},403);
+  await rpc('adminA','verify_mudir_case',{case_id:governance,evidence_reference:'self-assertion'},403);
+  await rpc('super','verify_mudir_case',{case_id:governance,evidence_reference:'synthetic institutional verification'},204);
+ });
+ const leader=await rpc('adminA','invite_leadership',{tenant_id:f.institutions.A,recipient_profile_id:f.profiles.outsider,role_code:'MUDIR',case_id:governance});
+ await check('leadership snapshot cannot be changed or consumed by another recipient over API',async()=>{
+  await rpc('guardian','accept_provisioning_invitation',{token:leader.token},403);
+  await rpc('outsider','accept_provisioning_invitation',{token:leader.token,role_code:'INSTITUTION_ADMIN'},404);
+  await rpc('outsider','accept_provisioning_invitation',{token:leader.token});
+  await rpc('outsider','accept_provisioning_invitation',{token:leader.token},403);
+ });
+ await check('Mudir JWT gains institution monitoring, no CRUD or approval bypass',async()=>{
+  assert.equal((await rest('outsider',`/programs?institution_id=eq.${f.institutions.A}`)).length,2);
+  assert.deepEqual(await rest('outsider',`/programs?institution_id=eq.${f.institutions.B}`),[]);
+  assert.deepEqual(await rest('outsider',`/programs?id=eq.${f.programs.a.id}`,{method:'PATCH',body:{name:'unauthorized'}}),[]);
+  await rpc('outsider','decide_enrollment_approval',{request_id:req,party:'WALI',approved:true},403);
+  await rpc('outsider','decide_enrollment_approval',{request_id:req,party:'LEMBAGA_A',approved:true},403);
+  await rpc('outsider','set_enrollment_approval_policy',{tenant_id:f.institutions.A,requirements:'NONE'},403);
+ });
+ const deputy=await rpc('outsider','invite_leadership',{tenant_id:f.institutions.A,recipient_profile_id:f.profiles.guardian,role_code:'WAKIL_MUDIR',program_ids:[f.programs.a.id]});
+ await rpc('guardian','accept_provisioning_invitation',{token:deputy.token});
+ await check('multi-role guardian deputy sees monitoring only in assigned program',async()=>{
+  assert.equal((await rpc('guardian','monitor_students',{tenant_id:f.institutions.A,program_id:f.programs.a.id})).length,2);
+  assert.deepEqual(await rpc('guardian','monitor_students',{tenant_id:f.institutions.A,program_id:f.programs.aOther.id}),[]);
+  assert.deepEqual(await rpc('guardian','monitor_students',{tenant_id:f.institutions.B,program_id:f.programs.b.id}),[]);
+  await rpc('guardian','invite_leadership',{tenant_id:f.institutions.A,recipient_profile_id:f.profiles.student,role_code:'WAKIL_MUDIR'},403);
+ });
+ await check('revoked leadership scope stops API access without removing guardian role',async()=>{
+  const scopes=await rpc('guardian','my_leadership_scopes',{});
+  await rpc('outsider','revoke_leadership_scope',{scope_id:scopes[0].scope_id},204);
+  assert.deepEqual(await rpc('guardian','monitor_students',{tenant_id:f.institutions.A,program_id:f.programs.a.id}),[]);
+  assert.ok((await rest('guardian','/guardian_profiles')).length>0);
+ });
+ await check('academic API relation is tenant-safe and historical group cannot be relabeled',async()=>{
+  const level=(await rest('adminA','/institution_levels',{body:{institution_id:f.institutions.A,code:'MI',name:'MI'},status:201}))[0];
+  const pl=(await rest('adminA','/program_levels',{body:{institution_id:f.institutions.A,program_id:f.programs.a.id,level_id:level.id},status:201}))[0];
+  await rest('adminB','/program_levels',{body:{institution_id:f.institutions.B,program_id:f.programs.b.id,level_id:level.id},status:409});
+  await rest('adminA',`/groups?id=eq.${f.groups.a1.id}`,{method:'PATCH',body:{program_level_id:pl.id},status:400});
+  assert.deepEqual(await rest('adminB',`/institution_levels?id=eq.${level.id}`),[]);
  });
  console.log(`${passed}/${passed} real Auth/JWT/API workflow checks passed`);
 }finally{if(api)await api.close();await s.close();}

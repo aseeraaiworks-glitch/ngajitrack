@@ -4,29 +4,32 @@ Implementasi **Supabase/PostgreSQL saja**, berdasarkan lima dokumen v1.2 dalam `
 
 Status lengkap dan langkah melanjutkan ada di [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
-## Checkpoint aktif — migration 1–10
+## Checkpoint aktif — migration 1–11
 
-Migration approval dan provisioning telah applied lokal. Kontrak Web Admin/Flutter ada di [BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md); UI belum dibuat.
+Migration 11 terpasang lokal: struktur program/learning type/tingkatan, scope kepemimpinan, governance satu Mudir aktif, dan inheritance konfigurasi. Migration 1–10 tidak diubah. Detail schema, RPC, governance, gap dan perintah uji: [MIGRATION_11.md](docs/MIGRATION_11.md). Kontrak client existing tetap ada di [BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md).
 
-Runner final yang dapat diulang tanpa reset fixture utama:
+Runner terkini yang dapat diulang tanpa reset fixture utama:
 
 ```sh
+pnpm test:governance
 pnpm test:upgrade
 pnpm test:workflow-sql
 pnpm test:workflow-api
-pnpm verify:workflow-local
+pnpm test:governance-concurrency
+pnpm test:governance-scheduler
+pnpm verify:governance-local
 ```
 
-Verifier lokal memerlukan baseline yang sudah diambil sebelum apply; lihat [HARDENING.md](docs/HARDENING.md). Hasil: 20/20 upgrade, 53/53 foundation (51 native + 2 embedded), 18/18 Auth/API, 8/8 primary verification; lint bersih.
+Verifier utama memakai baseline sebelum upgrade 10 → 11 yang tersimpan lokal di reports/. Lihat [TEST_REPORT.md](TEST_REPORT.md) untuk hasil dan batas verifikasi.
 
-Perintah test/postgres/api lama di bagian historis berikut menguji kontrak migration 1–7 dan tidak membuktikan approval baru. Jangan menjalankan runner API lama terhadap instance utama atau menganggap test temporary lama kompatibel dengan guard migration 9. Gunakan tiga runner workflow di atas untuk kontrak saat ini; tidak perlu db reset.
+Runner test/test:isolated/test:concurrency historis tetap menguji kontrak 1–7; test:scheduler menguji v8. Gunakan runner governance/workflow di atas untuk schema 11. Jangan menjalankan runner API lama terhadap instance utama atau db reset untuk mengulang test.
 
 ## Isi proyek
 
 ```text
 docs/                       spesifikasi asli + keputusan + panduan operasi
 supabase/config.toml        konfigurasi Supabase lokal
-supabase/migrations/        sepuluh migrasi SQL berurutan
+supabase/migrations/        sebelas migrasi SQL berurutan
 supabase/seed.sql           tanpa akun/data dummy permanen
 tests/                     fixture sintetis, auth shim, matriks keamanan
 scripts/                   pemeriksaan migrasi + runner PostgreSQL native

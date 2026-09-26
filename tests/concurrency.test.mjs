@@ -1,9 +1,15 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {setTimeout} from 'node:timers/promises';
-import {sandbox} from '../scripts/local-sandbox.mjs';
+import {sandbox,root} from '../scripts/local-sandbox.mjs';
+import {schedulerLab} from '../scripts/scheduler-lab.mjs';
+import {readFile} from 'node:fs/promises';
+const current=process.env.NGAJITRACK_TEST_SCHEMA_VERSION==='11';
 import {makeFixture} from './fixture.mjs';
-async function context(fn){const s=await sandbox();const clients=[];try{const f=await makeFixture(s);async function actor(name){const c=await s.connect();clients.push(c);await c.query('begin');if(name){await c.query("select set_config('request.jwt.claim.sub',$1,true)",[f.users[name]]);await c.query('set local role authenticated');}else await c.query('set local role service_role');return c;}await fn(s,f,actor);}finally{for(const c of clients){await c.query('rollback').catch(()=>{});await c.end();}await s.close();}}
+async function context(fn){const s=await (current?schedulerLab():sandbox());let upgraded=false;const clients=[];try{const f=await makeFixture(s);async function actor(name){if(current&&!upgraded){
+ for(const file of ['20260925000800_expiry_scheduler.sql','20260925000900_enrollment_approvals.sql','20260925001000_verified_provisioning.sql','20260926001100_academic_governance.sql'])await s.query(await readFile(new URL('supabase/migrations/'+file,root),'utf8'));
+ await s.query('select cron.alter_job(jobid,active:=false) from cron.job');upgraded=true;
+ }const c=await s.connect();clients.push(c);await c.query('begin');if(name){await c.query("select set_config('request.jwt.claim.sub',$1,true)",[f.users[name]]);await c.query('set local role authenticated');}else await c.query(current?'set local role ngt_expiry_scheduler':'set local role service_role');return c;}await fn(s,f,actor);}finally{for(const c of clients){await c.query('rollback').catch(()=>{});await c.end();}await s.close();}}
 async function blocked(s,c){const deadline=Date.now()+3000;while(Date.now()<deadline){const r=await s.query("select wait_event_type from pg_stat_activity where pid=$1",[c.processID]);if(r.rows[0]?.wait_event_type==='Lock')return;await setTimeout(10);}throw Error('Expected overlapping transactions waiting on a database lock');}
 const close=(c,id)=>c.query('select public.end_institution_enrollment($1)',[id]);
 const expire=c=>c.query('select public.expire_institution_enrollments(1) n');

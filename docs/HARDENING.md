@@ -1,5 +1,10 @@
 # Backend hardening lokal
 
+## Addendum Migration 11 (2026-09-26)
+
+Struktur akademik, learning type jamak, governance satu Mudir aktif, scope Wakil dan inheritance konfigurasi telah ditambahkan. Kontrak RPC/permission serta batas operasional terbaru ada di [MIGRATION_11.md](MIGRATION_11.md). Approval/provisioning STANDARD existing di bawah tetap berlaku; leadership tidak otomatis mendapat approval WALI atau Admin. Migration 1–10 tidak diubah.
+
+
 Jalankan dari root project dengan Docker tersedia pada PATH dan Supabase lokal ngajitrack berjalan.
 
 - node scripts/test-isolated.mjs: membuat database SQL terpisah, replay migration, menjalankan regresi, menghapus hanya database milik run. Dapat diulang tanpa reset fixture utama.

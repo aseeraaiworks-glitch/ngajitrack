@@ -27,7 +27,7 @@ describe('NgajiTrack PostgreSQL backend foundation',{concurrency:false},()=>{
   it('replays migrations on a second clean embedded database',async()=>{const fresh=await createDatabase({embedded:true});assert.equal((await fresh.query("select count(*)::int n from pg_tables where schemaname='public' and rowsecurity")).rows[0].n,18);await fresh.close();});
   it('has only foundation tables, RLS on all tables, and three program type seeds',async()=>{
     const tables=await rows("select tablename,rowsecurity from pg_tables where schemaname='public'");
-    assert.equal(tables.length,18);assert.ok(tables.every(t=>t.rowsecurity));
+    assert.equal(tables.length,process.env.NGAJITRACK_TEST_SCHEMA_VERSION==='11'?21:18);assert.ok(tables.every(t=>t.rowsecurity));
     assert.deepEqual((await rows('select code from public.program_types order by code')).map(x=>x.code),['CUSTOM','QURAN_READING','TAHFIZ']);
   });
   it('auth trigger creates one profile and ignores role metadata',async()=>{

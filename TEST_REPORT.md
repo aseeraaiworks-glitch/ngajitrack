@@ -1,5 +1,35 @@
 # Laporan pengujian backend foundation
 
+## Migration 11 — hasil final (2026-09-26)
+
+| Suite | Hasil | Cakupan / bukti lokal yang diabaikan Git |
+| --- | --- | --- |
+| Governance/akademik | 29/29 PASS | reports/final-governance.txt; native upgrade 10 → 11, semua nilai lama public/private/Auth, relasi akademik, scopes, uniqueness, replacement/recovery, invitation, config, dua interleaving nyata |
+| Native upgrade approval | 20/20 PASS | reports/governance-upgrade.txt; data existing 6 → 7 → 8 → 9 → 10 → 11, legacy exception, approval WALI/source, expiry |
+| Foundation terkini | 53/53 PASS | reports/final-workflow.txt; 51 native pada schema 11 + dua test embedded historis eksplisit |
+| Auth/JWT/PostgREST | 24/24 PASS | reports/final-api.txt; 18 kasus existing + enam kasus leadership/akademik; login Auth asli di lab terpisah |
+| Concurrency schema 11 | 6/6 PASS | reports/final-concurrency.txt; selesai setelah apply utama, worker expiry khusus, closure/move, lock wait nyata |
+| Scheduler | 13/13 PASS | reports/final-scheduler.txt; instalasi/privilege v8 lalu late expiry, periodic failure/retry, duplicate/backlog 1101 pada schema 11 |
+| Instance utama pasca-apply | 9/9 PASS | reports/governance-primary.txt; diulang read-only saat finalisasi, data existing/policy/job/ACL/RLS/health/backfill |
+| Baseline historis native | 76/76 PASS | reports/governance-legacy.txt; schema 1–7, 73 native + tiga embedded eksplisit |
+| Baseline historis embedded | 76/76 PASS | reports/governance-embedded.txt; kontrak 1–7 tanpa Docker |
+| JSONB installed resolver | PASS | Probe read-only saat finalisasi mengembalikan settings={}, sources={}, schema_version=1 |
+
+Tidak ada failure/skipped pada hasil final. Suite historis tidak diklaim sebagai pengujian approval/governance baru. Semua container/database uji dibersihkan oleh harness; fixture utama tidak di-reset. Data public/private/Auth lama dipertahankan saat upgrade; hanya objek/reference additive yang ditambahkan. Audit yang sebelumnya ada dibandingkan memakai kolom lama, tanpa menulis ulang histori.
+
+Kasus Migration 11 mencakup learning type jamak, shared level/program-level, kelas historis, first-placement race, multi-role, institution/program/multiple/no/expired/revoked scope, tampering, eskalasi, tenant isolation, inheritance/provenance, uniqueness index, atomic replacement, recovery terverifikasi, larangan self-verification, undangan stale setelah orang yang sama kembali menjabat, serta isolasi approval. Regresi API memastikan leadership tidak dapat menggantikan WALI/LEMBAGA_A.
+
+Lint public/private selesai exit 0 tanpa error. Dua warning 42804 berasal dari deklarasi result jsonb:='{}' dan sources jsonb:='{}' dalam effective_learning_config. PostgreSQL mengonversi literal valid menjadi jsonb; tidak ada input pengguna atau SQL dinamis pada inisialisasi ini. Test inheritance dan probe function terpasang membuktikan objek JSON yang benar. Tidak dilakukan perubahan schema hanya untuk membungkam warning.
+
+Saat pengembangan, assertion observasi concurrency sempat gagal karena pg_stat_activity tersimpan dalam snapshot transaksi pengamat; harness diperbaiki dengan pg_stat_clear_snapshot. Guard akademik juga ditinjau agar akses field record spesifik tabel tidak dievaluasi pada tabel lain. Hasil final di atas memakai perbaikan tersebut. Migration 11 sudah applied sekali di utama; finalisasi tidak mengulang apply.
+
+Security review: no client/service_role CRUD pada tabel private workflow, leadership mutation hanya melalui governance, fixed search_path dan explicit EXECUTE grants, cron tetap expiry-only. Scan secret/path dan review satu temuan template URL runtime dijelaskan pada SECURITY_AUDIT.md. Migration 1–10 tidak berubah.
+
+Batas pengujian: lokal PostgreSQL/Supabase; bukan staging/production atau pembuktian semua interleaving/performa. Tidak ada email delivery, UI recovery, fitur analytics/laporan, atau frontend. Registry konfigurasi produksi masih kosong sampai key dan aturan pedagogis disepakati.
+
+Langkah tepat berikutnya: publikasikan checkpoint yang lulus test ke main, verifikasi push/working tree, laporkan, lalu berhenti.
+
+
 ## Hardening 4–5 — upgrade native, approval dan provisioning selesai (2026-09-25)
 
 Checkpoint ini menggantikan langkah berikutnya pada bagian histori di bawah.

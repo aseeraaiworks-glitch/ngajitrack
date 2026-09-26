@@ -1,5 +1,10 @@
 # Keputusan backend foundation
 
+## Addendum Migration 11 (2026-09-26)
+
+Struktur akademik, learning type jamak, governance satu Mudir aktif, scope Wakil dan inheritance konfigurasi telah ditambahkan. Kontrak RPC/permission serta batas operasional terbaru ada di [MIGRATION_11.md](MIGRATION_11.md). Approval/provisioning STANDARD existing di bawah tetap berlaku; leadership tidak otomatis mendapat approval WALI atau Admin. Migration 1–10 tidak diubah.
+
+
 Sumber produk: kelima dokumen v1.2 di direktori ini. Instruksi eksplisit pengguna membatasi fase ini; requirement MVP lain tidak otomatis masuk implementasi.
 
 1. Pengguna menyetujui `guardian_profiles.profile_id` nullable sebelum aktivasi. Link guardian-student memakai `PENDING`, `VERIFIED`, `REVOKED`; hanya VERIFIED memberi akses.

@@ -23,6 +23,10 @@ try{
  await check('scheduler role cannot authenticate through published TCP port without a password',async()=>{const c=new pg.Client({...s.config,user:'ngt_expiry_scheduler',password:'invalid-synthetic-password'});try{await assert.rejects(c.connect());}finally{await c.end().catch(()=>{});}});
  await s.query("update public.institution_enrollments set enrollment_type='HOLIDAY',scheduled_end_at=current_date-1 where id=$1",[f.ie.a1.id]);
  await s.query("update public.institution_enrollments set enrollment_type='TEMPORARY',scheduled_end_at=current_date-1 where id=$1",[f.ie.b1.id]);
+ if(process.env.NGAJITRACK_TEST_SCHEMA_VERSION==='11'){
+  for(const file of ['20260925000900_enrollment_approvals.sql','20260925001000_verified_provisioning.sql','20260926001100_academic_governance.sql'])await s.query(await readFile(new URL('supabase/migrations/'+file,root),'utf8'));
+  console.log('Running late expiry, periodic retry, duplicate and backlog tests on schema 11');
+ }
  await check('late scheduler does not restore roster access or permit class moves',()=>as('authenticated',async c=>{await c.query("select set_config('request.jwt.claim.sub',$1,false)",[f.users.teacher]);assert.deepEqual((await c.query('select id from public.student_profiles')).rows.map(x=>x.id),[f.students.b2.id]);await c.query("select set_config('request.jwt.claim.sub',$1,false)",[f.users.adminA]);await assert.rejects(c.query('select public.move_student_group($1,$2)',[f.pe.a1.id,f.groups.a2.id]),e=>e.code==='23514');}));
  await check('batch bounds reject invalid input',()=>as('ngt_expiry_scheduler',async c=>{for(const n of [null,0,-1,1001])await assert.rejects(c.query('select public.expire_institution_enrollments($1)',[n]),e=>e.code==='22023');}));
  await s.query("create function private.scheduler_test_fail() returns trigger language plpgsql as $$begin raise exception 'Synthetic retry failure'; end$$; create trigger scheduler_test_fail before update on public.program_enrollments for each row execute function private.scheduler_test_fail();");

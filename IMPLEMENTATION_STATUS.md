@@ -1,5 +1,25 @@
 # Status implementasi NgajiTrack
 
+## Migration 11 — finalisasi selesai (2026-09-26)
+
+Checkpoint ini menggantikan langkah berikutnya pada histori di bawah.
+
+- Dibuat dan applied: `20260926001100_academic_governance.sql`. Supabase lokal utama memiliki migration 1–11; Migration 1–10 identik dengan HEAD sebelumnya. Tidak ada apply remote/cloud dan tidak ada reset fixture.
+- Struktur additive: program_learning_types, institution_levels, program_levels; groups.program_level_id nullable tanpa tebakan level; membership_scopes private; case/invitation governance; registry dan version konfigurasi; audit permission/context.
+- MUDIR maksimal satu ACTIVE per lembaga melalui unique index. Replacement atomik menjaga histori; recovery membutuhkan alasan/bukti dan verifikasi platform, requester tidak dapat memverifikasi dirinya sendiri. WAKIL_MUDIR mendukung scope institution/program/multiple, expiry dan revocation. Direct mutation/soft-delete tidak melewati governance.
+- RLS monitoring hanya membaca konteks yang sah; multi-role tidak memperluas scope kepemimpinan atau approval WALI/Admin. Invitation snapshot role/scope/recipient/masa jabatan tidak dapat ditamper atau di-replay. Approval/provisioning STANDARD 9–10 dan scheduler existing dipertahankan.
+- Inheritance konfigurasi: Institution → Level → Program → Program+Level, version/provenance tersimpan. Registry key pedagogis produksi belum diisi; tidak menebak target/workflow produk.
+- Hasil: governance/akademik 29/29; native upgrade 20/20; foundation schema 11 53/53; Auth/JWT/PostgREST 24/24; concurrency schema 11 6/6; scheduler 13/13 dengan periodic/retry/backlog pada schema 11; post-apply utama 9/9. Baseline historis 76/76 native/embedded dan 76/76 embedded juga lulus. Detail cakupan di TEST_REPORT.md.
+- Concurrency dan scheduler schema 11 selesai setelah apply utama. Pada finalisasi bukti diperiksa, tidak mengulang migration/test yang sudah tuntas. Verifikasi read-only utama 9/9 diulang untuk memastikan state checkpoint; probe JSONB installed function juga lulus.
+- Lint exit 0, tanpa error, dua warning implicit text → jsonb pada inisialisasi konstanta '{}' untuk result/sources dalam effective_learning_config. Bukan input dinamis; resolver/inheritance dan probe read-only menghasilkan JSON object sesuai contract. Tidak memerlukan perubahan migration yang sudah applied.
+- Seluruh nilai kolom lama public/private/Auth tetap sama berdasarkan snapshot hash. Policy RLS lama dan job cron 15 menit/batch 500 tetap ada; role scheduler hanya EXECUTE expiry tanpa CRUD/private workflow. Kelas lama tidak diberi level dan tidak ada pimpinan yang ditunjuk otomatis pada fixture utama.
+- File baru: migration 11; docs/MIGRATION_11.md; scripts/test-governance.mjs, test-governance-regression.mjs, upgrade-snapshot.mjs, verify-governance-local.mjs. File diperbarui: README, package.json, docs/BACKEND_CONTRACT.md, FOUNDATION_DECISIONS.md, HARDENING.md; runner upgrade/scheduler/workflow SQL/API; tests/concurrency.test.mjs dan foundation.test.mjs; status, test report, security audit.
+- Security: 59 kandidat file ditinjau/dipindai; tidak ditemukan secret tersimpan. Satu pola URL lab dikonfirmasi memakai password acak runtime, bukan literal credential. Sepuluh probe ignore lulus. Repository target terverifikasi private, push diizinkan; .env/keys/reports/cache/runtime tetap dikecualikan.
+- Publikasi: checkpoint ini disiapkan untuk commit/push biasa ke main tanpa force; hash dan konfirmasi sinkronisasi dilaporkan setelah publikasi, dapat dilacak melalui git log/origin/main.
+- Gap tersisa: email delivery/account-less invitation, layanan operasional verifikasi bukti/rate limit recovery, definisi pedagogis konkret, academic period, approval pimpinan yang didefinisikan eksplisit di masa depan, staging/production. Dua warning lint kosmetik dicatat. Tidak ada test gagal atau keputusan produk baru yang tertunda untuk scope ini.
+- Langkah tepat berikutnya: commit dan push checkpoint yang sudah diaudit, verifikasi origin/main dan working tree, laporkan hasil lalu BERHENTI. Jangan mulai Web Admin/Flutter atau milestone baru.
+
+
 ## Hardening 4–5 — upgrade native, approval dan provisioning selesai (2026-09-25)
 
 Checkpoint ini menggantikan langkah berikutnya pada bagian histori di bawah.

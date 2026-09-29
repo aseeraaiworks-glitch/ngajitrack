@@ -1,5 +1,32 @@
 # Laporan pengujian backend foundation
 
+## Checkpoint 12.1–12.2 — hasil final (2026-09-29)
+
+| Pemeriksaan | Hasil final | Perintah / bukti |
+| --- | --- | --- |
+| Install lockfile | PASS | pnpm install --frozen-lockfile |
+| Production build | PASS | pnpm test:web membangun Next production sebelum browser; route login/app dinamis |
+| Lint | PASS, 0 warning/error | pnpm lint:web |
+| Typecheck | PASS | web-local.mjs typegen + tsc --noEmit; build final juga menjalankan TypeScript |
+| Unit boundary | 11/11 PASS | pnpm test:web:unit |
+| Browser/Auth SSR | 16/16 PASS, 0 skipped | pnpm test:web, Chromium 153, production Next; putaran final 18,8 detik untuk browser |
+| Foundation/RLS schema 11 | 53/53 PASS | node scripts/test-workflow-regression.mjs; 51 native + 2 embedded historis eksplisit |
+| Auth/JWT/PostgREST backend | 24/24 PASS | node scripts/test-workflow-api.mjs; tenant/multi-role/approval/provisioning/governance |
+| Dependency audit | PASS | pnpm audit --audit-level high: No known vulnerabilities found |
+| Source/ignore audit | PASS | 94 kandidat, 0 temuan pola secret/path sensitif, 12/12 probe ignore; index diperiksa lagi sebelum commit |
+
+Unit: redirect allowlist, error generik, konfigurasi environment/public key, context Mudir → Wali, institution switching, penolakan late response, account reset, logout, refresh account yang sama, larangan load tanpa account/context eksplisit. Ini acceptance pada state boundary; belum acceptance UI role switcher 12.3.
+
+Browser: protected route tanpa login; password salah; login benar dan profil sendiri; reload; logout/cookie cleanup/back navigation/akun berbeda; logout lintas tab; expired signed token + refresh SSR nyata; expired session dengan refresh invalid; forged cookie/JWT invalid; profil nonaktif + logout; empat varian redirect berbahaya; query profile user lain ditolak RLS; pesan network error generik; mobile viewport/reduced motion/keyboard submit/offline indicator. Screenshot sintetis diperiksa visual di reports/web-login-mobile.png dan web-account-mobile.png (diabaikan Git).
+
+Runner membuat akun melalui Auth lab. Untuk expiry, helper mengubah exp token lab dan menandatanganinya memakai secret lab; Auth menolaknya sebelum pengujian, lalu refresh token asli menghasilkan sesi baru. Tidak memakai JWT fabrikasi untuk login normal dan tidak memakai key utama. Trace/video/storageState tidak direkam. Lab gateway hanya loopback.
+
+Putaran browser pertama 13/16: dua selector juga menangkap route announcer Next.js; satu race logout sebelum INITIAL_SESSION tab kedua. Selector diperjelas; provider kini menunggu inisialisasi SDK dan menutup tampilan bila sesi hilang. Putaran final 16/16. Warning lint PostCSS pada putaran awal diperbaiki; hasil lint final bersih. Log AuthApiError 400 pada negative refresh test adalah penolakan yang diharapkan, bukan test gagal; warning FORCE_COLOR/NO_COLOR hanya output runner.
+
+Fixture utama public/Auth identik setelah semua runner; container test dihapus oleh harness. Migration 1–11, schema/RLS/RPC tidak diubah. Regresi historis concurrency/scheduler/upgrade tidak diulang karena tidak ada perubahan backend. Browser baru diuji Chromium lokal, bukan Firefox/WebKit/staging/production. Tidak mengklaim full mode switching, teaching/offline sync atau deployment selesai.
+
+Langkah tepat berikutnya: publikasikan checkpoint yang seluruh test-nya lulus, verifikasi main sinkron/working tree clean, laporkan dan BERHENTI sebelum 12.3.
+
 ## Migration 11 — hasil final (2026-09-26)
 
 | Suite | Hasil | Cakupan / bukti lokal yang diabaikan Git |

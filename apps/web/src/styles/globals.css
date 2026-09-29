@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #f5f7f3;
+  --color-surface: #ffffff;
+  --color-ink: #172e29;
+  --color-muted: #52665f;
+  --color-brand: #17634f;
+  --color-brand-hover: #104d3d;
+  --color-soft: #e8f1ea;
+  --color-line: #d9e3da;
+  --color-danger: #a22b32;
+  --color-danger-soft: #fceced;
+  --color-warning: #825910;
+  --font-sans: "Segoe UI", system-ui, sans-serif;
+  --radius-card: 1.5rem;
+  --radius-control: .75rem;
+  --shadow-card: 0 12px 48px #172e2908;
+  --animate-enter: enter .25s ease-out;
+}
+
+:root { color-scheme: light; }
+body { background: var(--color-canvas); color: var(--color-ink); }
+button, a, input { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--color-brand); outline-offset: 4px; }
+@keyframes enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

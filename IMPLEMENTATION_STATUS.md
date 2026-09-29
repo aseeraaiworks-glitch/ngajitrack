@@ -1,5 +1,19 @@
 # Status implementasi NgajiTrack
 
+## Checkpoint 12.1–12.2 selesai (2026-09-29)
+
+- Scaffold `apps/web` tersedia: Next.js 16.3.7/TypeScript/App Router, pnpm workspace, Tailwind semantic tokens, UI reusable, pemisahan application/domain/data, environment validation dan Supabase browser/server adapters. Tidak memakai nama admin-web.
+- Authentication: email/password akun existing, logout scope local, persistence/refresh cookie SSR, verified own-profile, protected `/app`, redirect allowlist, loading/error/access state dan indikator offline dasar. Tidak ada signup atau halaman bisnis.
+- Hasil final: build produksi PASS; lint 0 error/0 warning; typecheck PASS; unit boundary 11/11; browser Chromium 16/16; SQL foundation schema 11 53/53; Auth/JWT/API 24/24. Tidak ada test gagal/skipped pada hasil final. Dependency audit tidak menemukan kerentanan dikenal.
+- Putaran browser awal 13/16 menemukan race logout lintas tab ketika SDK belum terinisialisasi dan dua selector alert ambigu; diperbaiki, kemudian seluruh 16 test lulus. Profil kini menunggu INITIAL_SESSION sebelum tampil. Token kedaluwarsa, refresh gagal, forged cookie, logout/back, pergantian akun dan cross-user RLS teruji.
+- Acceptance reducer membersihkan data pada pergantian mode/institution/account dan menolak respons generation lama. Switcher 12.3 belum dibuat; query per-mode dan acceptance browser switcher sebenarnya tetap pekerjaan checkpoint berikutnya, bukan diklaim selesai.
+- Migration dibuat/applied: **tidak ada**. Migration 1–11 identik; tidak mengubah schema/RLS/RPC. Auth/PostgREST/database test terpisah; fixture utama public/Auth identik setelah setiap runner dan container test dibersihkan.
+- File: apps/web/** (source/config/unit/E2E), pnpm-workspace.yaml, package/lock, .gitignore, scripts/test-web.mjs, scripts/web-local.mjs, helper test auth-api-lab, README, docs/MILESTONE_12.md, status/test report/security audit. Generated Next files, environment, reports dan credential tetap diabaikan.
+- Security audit: 94 kandidat file dipindai sebelum finalisasi dokumentasi; 0 temuan pola secret/path sensitif; 12/12 probe ignore. Public environment hanya menerima publishable key; tidak ada service_role/DB credential dalam aplikasi. Repository GitHub terverifikasi private, main, izin push tersedia. Index diaudit ulang sebelum commit.
+- Batas: baru Chromium lokal desktop/mobile viewport; belum staging/production/Firefox/WebKit. Auth backend yang gagal memberikan error generik; production HTTPS/reverse proxy/CSP perlu ditinjau saat deployment. Tidak ada durable offline storage/sync, context UI, dashboard, Web Admin business pages atau Flutter. Tidak ada blocker terbuka untuk scope 12.1–12.2.
+- Publikasi: commit/push biasa ke private main setelah seluruh pemeriksaan lulus; hash/sinkronisasi dilaporkan melalui hasil Git agar tidak menyimpan hash commit diri sendiri dalam file.
+- Langkah tepat berikutnya: verifikasi HEAD = remote main dan working tree clean, laporkan hasil, lalu **BERHENTI**. Jangan mulai checkpoint 12.3 tanpa instruksi berikutnya.
+
 ## Migration 11 — finalisasi selesai (2026-09-26)
 
 Checkpoint ini menggantikan langkah berikutnya pada histori di bawah.

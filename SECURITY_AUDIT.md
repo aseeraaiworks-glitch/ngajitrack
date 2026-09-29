@@ -1,5 +1,15 @@
 # Audit sebelum publikasi Git
 
+## Checkpoint 12.1–12.2 (2026-09-29)
+
+- 94 kandidat source/config/docs/test dipindai; tidak ditemukan pola JWT, private key, GitHub/private API key, AWS/Google credential atau path sensitif. 12/12 probe ignore lulus. Index diperiksa lagi sebelum commit. Scan berbasis pola dilengkapi review source, bukan jaminan semua format secret.
+- `.env*`, private keys, credential, runtime/cache/log, `.next`, generated next-env/types, node_modules, screenshot reports, Playwright output dan tsbuildinfo tidak masuk commit. Tidak menyimpan contoh password/key nyata dalam README atau dokumentasi.
+- Web menerima hanya HTTPS origin (HTTP loopback lokal) dan publishable key. Legacy JWT key/private key ditolak sebelum build/start. Server client memakai session pengguna; tidak ada service_role, DB password, server provisioning atau administrative RPC dalam bundle web.
+- Secret Auth/Postgres dan password akun sintetis lab dihasilkan runtime. Token expired test ditandatangani hanya dengan secret lab yang baru dibuat; tidak mengekspor signing key. CLI status lokal dibaca ke memori, hanya URL/publishable key diteruskan, hasil raw tidak dicetak/disimpan. Trace/video/storageState dimatikan.
+- Protected data memakai Auth getUser dan RLS, query auth_user_id eksplisit dengan kolom profil minimum. Role/context UI tidak mengubah privilege backend; belum ada query data role. No-store, SameSite, Secure pada HTTPS, redirect allowlist, error generik, pembersihan session/state lintas akun/tab dan penolakan late response diuji.
+- `pnpm audit --audit-level high`: No known vulnerabilities found. Lockfile disimpan; lifecycle script unrs-resolver tidak dijalankan (binding prebuilt tersedia, lint/typecheck/build lulus). Pengecualian release-age yang ditulis pnpm terbatas pada versi Next 16.3.7 yang dipin, bukan wildcard/global bypass.
+- GitHub target terverifikasi private, default main, permission push tersedia. Tidak mengubah migration 1–11 atau backend RLS/RPC. Tidak melakukan deployment. Production HTTPS, reverse proxy dan CSP tetap perlu verifikasi deployment terpisah.
+
 ## Finalisasi Migration 11 (2026-09-26)
 
 - Audit 59 kandidat file: tidak ditemukan secret literal setelah review. Pemeriksaan mencakup JWT, private key, token GitHub/OpenAI/Supabase/AWS/Google, credential URL, serta path sensitif. Sepuluh probe ignore lulus; tidak ada .env, keys, local reports/cache/runtime, atau credential file yang masuk kandidat.

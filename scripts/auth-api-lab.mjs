@@ -1,7 +1,7 @@
 // Disposable Auth/PostgREST services against schedulerLab's independent database.
 // Secrets are generated per run, passed through environment, never logged or saved.
 import {execFileSync,spawnSync} from 'node:child_process';
-import {randomBytes} from 'node:crypto';
+import {randomBytes,createHmac} from 'node:crypto';
 import {setTimeout} from 'node:timers/promises';
 export async function authApiLab(s){
  const name=s.name+'-api',containers=[];let network;
@@ -28,6 +28,17 @@ export async function authApiLab(s){
   });
   const rest=await run('rest',3000,{PGRST_DB_URI:`postgresql://authenticator:${password}@${s.name}:5432/postgres`,PGRST_DB_SCHEMAS:'public',PGRST_DB_ANON_ROLE:'anon',PGRST_JWT_SECRET:secret});
   for(const url of [auth+'/health',rest+'/']){let ready=false;for(let i=0;i<60;i++){try{if((await fetch(url)).ok){ready=true;break;}}catch{}await setTimeout(500);}if(!ready){for(const id of containers){const output=spawnSync('docker',['logs',id],{encoding:'utf8'});let logs=(output.stdout??'')+(output.stderr??'');for(const key of [secret,password,s.config.password])logs=logs.replaceAll(key,'[REDACTED]');console.log(logs.slice(-5000));}throw Error('Isolated Auth/PostgREST health check failed: '+url);}}
-  return {auth,rest,close:stop};
+  // Signed, expired fixture for browser refresh/expiry tests only. The source
+  // token must belong to this disposable lab; no production signing key is used.
+  function expiredAccessToken(token){
+   const [header,payload,signature]=token.split('.');
+   const sign=value=>createHmac('sha256',secret).update(value).digest('base64url');
+   if(sign(`${header}.${payload}`)!==signature)throw Error('Token does not belong to this lab');
+   const data=JSON.parse(Buffer.from(payload,'base64url').toString());
+   data.exp=Math.floor(Date.now()/1000)-120;
+   const expired=Buffer.from(JSON.stringify(data)).toString('base64url');
+   return `${header}.${expired}.${sign(`${header}.${expired}`)}`;
+  }
+  return {auth,rest,expiredAccessToken,close:stop};
  }catch(e){await stop();throw e;}
 }

@@ -4,6 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev:web": "pnpm --filter @ngajitrack/web dev",
+    "dev:web:local": "node scripts/web-local.mjs dev",
+    "build:web": "pnpm --filter @ngajitrack/web build",
+    "lint:web": "pnpm --filter @ngajitrack/web lint",
+    "typecheck:web": "pnpm --filter @ngajitrack/web typecheck",
+    "test:web:unit": "pnpm --filter @ngajitrack/web test:unit",
+    "test:web": "node scripts/test-web.mjs",
     "test": "node --test --test-concurrency=1 tests/foundation.test.mjs tests/enrollments.test.mjs",
     "test:postgres": "node scripts/test-postgres.mjs",
     "test:api": "node scripts/test-api.mjs",

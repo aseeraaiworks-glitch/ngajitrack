@@ -1,10 +1,21 @@
-# NgajiTrack — Backend Foundation
+# NgajiTrack
 
-Implementasi **Supabase/PostgreSQL saja**, berdasarkan lima dokumen v1.2 dalam `docs/` dan keputusan pengguna. Tidak ada Flutter UI, Personal Mode, Mushaf reader, method engine, progres pembelajaran, Score, kalender, laporan produk, poster, atau pembayaran.
+Backend Supabase/PostgreSQL migration 1–11 dan fondasi aplikasi web multi-role di `apps/web`, berdasarkan dokumen dalam `docs/` serta keputusan pengguna. Checkpoint frontend saat ini hanya scaffold dan authentication (12.1–12.2). Tidak ada Flutter, dashboard bisnis, Personal Mode, Mushaf reader, teaching flow, analytics, laporan produk atau pembayaran.
 
 Status lengkap dan langkah melanjutkan ada di [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
-## Checkpoint aktif — migration 1–11
+## Checkpoint aplikasi — 12.1–12.2
+
+Panduan arsitektur, environment, security dan test: [MILESTONE_12.md](docs/MILESTONE_12.md).
+
+```sh
+pnpm install --frozen-lockfile
+pnpm dev:web:local
+```
+
+Supabase lokal existing harus aktif. Buka `http://127.0.0.1:3000/login` dan gunakan akun existing. Perintah lokal membaca publishable key ke memori; tidak menulis credential. Pengujian browser: `pnpm test:web` memakai environment terpisah dan tidak mereset fixture utama. Berhenti setelah 12.2; switcher/context 12.3 belum diimplementasikan.
+
+## Backend — migration 1–11
 
 Migration 11 terpasang lokal: struktur program/learning type/tingkatan, scope kepemimpinan, governance satu Mudir aktif, dan inheritance konfigurasi. Migration 1–10 tidak diubah. Detail schema, RPC, governance, gap dan perintah uji: [MIGRATION_11.md](docs/MIGRATION_11.md). Kontrak client existing tetap ada di [BACKEND_CONTRACT.md](docs/BACKEND_CONTRACT.md).
 
@@ -28,6 +39,7 @@ Runner test/test:isolated/test:concurrency historis tetap menguji kontrak 1–7;
 
 ```text
 docs/                       spesifikasi asli + keputusan + panduan operasi
+apps/web/                   Next.js multi-role: scaffold + authentication
 supabase/config.toml        konfigurasi Supabase lokal
 supabase/migrations/        sebelas migrasi SQL berurutan
 supabase/seed.sql           tanpa akun/data dummy permanen

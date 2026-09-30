@@ -1,5 +1,15 @@
 # Audit sebelum publikasi Git
 
+## Checkpoint 12.3 (2026-10-01)
+
+- 109 kandidat source/config/docs/test diperiksa: 0 temuan pola secret atau path sensitif; 12/12 probe ignore lulus. .env*, keys, credential, .next, runtime/cache/log, node_modules, reports dan Playwright output tetap dikecualikan. Index dipindai ulang sebelum commit.
+- Context berasal dari own profile (auth_user_id), my_institutions, own active membership+role dan my_leadership_scopes. Program scope harus hadir pada query metadata program aktif dengan IDs eksplisit. Tidak ada pembacaan full institutions atau union business data; audit request pada lab menguji filter yang benar-benar dikirim aplikasi.
+- URL/preference hanya pasangan ID yang harus cocok dengan hasil bootstrap baru. Tidak percaya role Auth metadata, role query parameter atau role tersimpan. Context/capability frontend tidak mengganti RLS, tidak memberi approval pimpinan, dan tidak menggunakan service_role. Multi-role tidak digabung menjadi role buatan.
+- Session diverifikasi sebelum dan sesudah bootstrap; error query gagal tertutup. Logout/account change menghapus state/preference; context change membuang state lama dan memakai navigasi baru. No profile tidak memicu provisioning.
+- Test fixture/governance dibuat hanya di lab; secret/password/token acak di memori. Fault injection hanya gateway test. Tidak ada credential/token disimpan dalam preferensi (dua ID saja), source, trace/video/storageState atau laporan.
+- Migration 1–11, backend RLS/RPC, package manifest/lock tetap tidak berubah. Dependency audit tidak menemukan kerentanan dikenal. GitHub target kembali terverifikasi private, default main, push permission tersedia.
+- Batas audit berbasis pola dan review source, bukan jaminan semua format secret. Context snapshot perlu divalidasi ulang setiap bootstrap; backend tetap membatasi akses bila grant berubah setelah snapshot. Tidak melakukan deployment.
+
 ## Checkpoint 12.1–12.2 (2026-09-29)
 
 - 94 kandidat source/config/docs/test dipindai; tidak ditemukan pola JWT, private key, GitHub/private API key, AWS/Google credential atau path sensitif. 12/12 probe ignore lulus. Index diperiksa lagi sebelum commit. Scan berbasis pola dilengkapi review source, bukan jaminan semua format secret.

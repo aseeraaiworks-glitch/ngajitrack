@@ -8,6 +8,8 @@ import { setTimeout } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { schedulerLab } from './scheduler-lab.mjs';
 import { authApiLab } from './auth-api-lab.mjs';
+import { webContextFixture } from '../tests/web-context-fixture.mjs';
+import assert from 'node:assert/strict';
 
 const web = new URL('../apps/web/', import.meta.url);
 const require = createRequire(new URL('package.json', web));
@@ -19,7 +21,9 @@ function child(file, args, env, background = false) {
   if (background) return processChild;
   return new Promise((resolve, reject) => { processChild.on('error', reject); processChild.on('exit', code => code === 0 ? resolve() : reject(Error(`Web command failed (exit ${code})`))); });
 }
-let lab, api, gateway, app;
+let lab, api, gateway, app, contextFixture;
+const requests = [];
+let invalidateDuringBootstrap = false;
 try {
   lab = await schedulerLab({ through: '20260926001100' });
   api = await authApiLab(lab);
@@ -32,6 +36,17 @@ try {
     const route = req.url ?? '/';
     const upstream = route.startsWith('/auth/v1/') ? api.auth + route.slice(8) : route.startsWith('/rest/v1/') ? api.rest + route.slice(8) : null;
     if (!upstream) { res.writeHead(404); res.end(); return; }
+    let userId;
+    try { userId = JSON.parse(Buffer.from(String(req.headers.authorization).split('.')[1], 'base64url').toString()).sub; } catch { /* Anonymous request. */ }
+    if (route.startsWith('/rest/v1/')) requests.push({ userId, route });
+    // Deterministic fault injection only in the lab gateway; never in app routes.
+    if (contextFixture && route === '/rest/v1/rpc/my_institutions') {
+      if (userId === contextFixture.accounts.loadError.id) { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"message":"synthetic context outage"}'); return; }
+      if (userId === contextFixture.accounts.lostSession.id) invalidateDuringBootstrap = true;
+    }
+    if (contextFixture && invalidateDuringBootstrap && userId === contextFixture.accounts.lostSession.id && route === '/auth/v1/user') {
+      res.writeHead(401, { 'Content-Type': 'application/json' }); res.end('{"msg":"synthetic session expired"}'); return;
+    }
     try {
       const body = []; for await (const chunk of req) body.push(chunk);
       const headers = new Headers();
@@ -53,6 +68,7 @@ try {
     accounts.push({ email, id: session.user.id });
   }
   await lab.query('update public.profiles set is_active=false where auth_user_id=$1', [accounts[2].id]);
+  contextFixture = await webContextFixture(lab, api, password);
   const expiredResponse = await fetch(api.auth + '/token?grant_type=password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: accounts[0].email, password }) });
   const expiredSession = await expiredResponse.json();
   expiredSession.access_token = api.expiredAccessToken(expiredSession.access_token);
@@ -67,6 +83,7 @@ try {
     NGT_WEB_TEST_ACCOUNTS: JSON.stringify(accounts),
     NGT_WEB_TEST_PASSWORD: password,
     NGT_WEB_TEST_EXPIRED_SESSION: JSON.stringify(expiredSession),
+    NGT_WEB_CONTEXT_FIXTURE: JSON.stringify(contextFixture),
   };
   await child(next, ['build'], env);
   app = child(next, ['start', '--hostname', '127.0.0.1', '--port', String(port)], env, true);
@@ -74,6 +91,25 @@ try {
   for (let i = 0; i < 60; i++) { try { if ((await fetch(env.NGT_WEB_TEST_URL + '/login')).ok) { ready = true; break; } } catch {} await setTimeout(500); }
   if (!ready) throw Error('Production web server did not start');
   await child(playwright, ['test'], env);
+  const own = new Map(Object.values(contextFixture.accounts).map(a => [a.id, a.profileId]));
+  for (const { userId, route } of requests) {
+    const query = new URL(route, 'http://localhost');
+    if (query.pathname === '/rest/v1/profiles' && own.has(userId)) {
+      assert.equal(query.searchParams.get('auth_user_id'), 'eq.' + userId);
+      assert.equal(query.searchParams.get('select'), 'id,full_name,preferred_name');
+    }
+    if (query.pathname === '/rest/v1/institution_members') {
+      assert.equal(query.searchParams.get('profile_id'), 'eq.' + own.get(userId), 'Membership query must select the caller only');
+      assert.ok(query.searchParams.get('institution_id')?.startsWith('in.('));
+    }
+    if (query.pathname === '/rest/v1/programs') {
+      assert.ok(query.searchParams.get('id')?.startsWith('in.('), 'Program metadata must use explicit scope IDs');
+      assert.equal(query.searchParams.get('is_active'), 'eq.true');
+    }
+    assert.ok(!['/rest/v1/institutions','/rest/v1/student_profiles','/rest/v1/guardian_students','/rest/v1/teacher_assignments','/rest/v1/rpc/monitor_students'].includes(query.pathname), 'Bootstrap must not fetch union business data');
+  }
+  assert.equal((await lab.query('select count(*)::int n from public.profiles where auth_user_id=$1', [contextFixture.accounts.missingProfile.id])).rows[0].n, 0);
+  console.log('PASS query-intent filters, no union business data, and no silent profile provisioning');
 } finally {
   if (app) { app.kill(); await new Promise(resolve => app.exitCode !== null ? resolve() : app.once('exit', resolve)); }
   if (gateway) { gateway.closeAllConnections(); await new Promise(resolve => gateway.close(resolve)); }

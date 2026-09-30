@@ -1,5 +1,19 @@
 # Status implementasi NgajiTrack
 
+## Checkpoint 12.3 — selesai (2026-10-01)
+
+- Context bootstrap, selection awal dan deep link terverifikasi sudah dibuat di apps/web. Sumber: own profile, my_institutions, own active membership+role, my_leadership_scopes, proyeksi program aktif yang dirujuk scope. Tidak ada query data bisnis union role atau hard-coded account context.
+- Satu membership = satu context; scope Wakil jamak digabung dalam membership yang sama, no scope tidak memberi full access. Metadata role/capability hanya untuk presentasi/query intent.
+- Preferensi lokal berisi dua ID, divalidasi ulang, tidak menjadi grant. Beberapa context selalu melalui pilihan; preferensi valid hanya preselect. Preferensi invalid dibuang dan meminta pilihan ulang.
+- Hasil final: unit 31/31, browser 38/38 (16 regresi Auth + 22 context), SQL/RLS foundation 53/53, Auth/JWT/API 24/24, lint 0 error/0 warning, typecheck/build produksi lulus. Audit request memverifikasi own-profile/own-membership, explicit active program filter, tanpa full institution/union business queries. Missing-profile tidak diprovision diam-diam. Tidak ada test gagal/skipped pada hasil final.
+- Migration dibuat/applied: tidak ada. Migration 1–11 dan fixture utama tetap utuh. File baru/berubah tercatat pada docs/MILESTONE_12.md; tidak menambah dependency.
+- State loading/no-profile/empty/error/permission-denied tersedia. ID deep link tidak dipercaya sebelum cocok dengan context backend. Logout menghapus preference/state dan pergantian context memakai navigasi baru. Known expiry memicu bootstrap ulang; tidak membuat realtime scope subscription.
+- Security: 109 kandidat file, 0 temuan pola secret/path terlarang, 12/12 probe ignore; dependency audit tidak menemukan kerentanan dikenal. Source tidak menggunakan service_role; credential fixture hanya runtime. Private main dan izin push GitHub telah diverifikasi; index diperiksa sebelum commit.
+- File utama baru: domain/application-context.ts, data/context-repository.ts, application/bootstrap-context.ts, features/context/*, features/shell/account-shell.tsx, route select-context dan i/[institutionId]/as/[membershipId], tests/unit/context.test.ts, tests/e2e/context.spec.ts, tests/web-context-fixture.mjs. File existing berubah: root app/loading, logout/session provider, runner test-web, README/MILESTONE_12, status/test report/security audit.
+- Batas: context adalah snapshot presentasi dan query intent, bukan grant. Query bisnis anak/roster/monitoring belum dibuat. Full switcher 12.4, dashboard, Flutter, offline sync dan deployment tidak dikerjakan. Browser baru Chromium lokal; tidak ada blocker schema untuk 12.3.
+- Publikasi menggunakan commit/push biasa ke private main setelah seluruh test lulus. Hash dan hasil sinkronisasi disampaikan setelah Git selesai, bukan ditulis sebagai hash commit diri sendiri.
+- Langkah tepat berikutnya: verifikasi HEAD lokal = origin/main = remote main, working tree clean; laporkan lalu **BERHENTI**. Jangan mulai 12.4 tanpa instruksi berikutnya.
+
 ## Checkpoint 12.1–12.2 selesai (2026-09-29)
 
 - Scaffold `apps/web` tersedia: Next.js 16.3.7/TypeScript/App Router, pnpm workspace, Tailwind semantic tokens, UI reusable, pemisahan application/domain/data, environment validation dan Supabase browser/server adapters. Tidak memakai nama admin-web.

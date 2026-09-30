@@ -1,10 +1,10 @@
 # NgajiTrack
 
-Backend Supabase/PostgreSQL migration 1–11 dan fondasi aplikasi web multi-role di `apps/web`, berdasarkan dokumen dalam `docs/` serta keputusan pengguna. Checkpoint frontend saat ini hanya scaffold dan authentication (12.1–12.2). Tidak ada Flutter, dashboard bisnis, Personal Mode, Mushaf reader, teaching flow, analytics, laporan produk atau pembayaran.
+Backend Supabase/PostgreSQL migration 1–11 dan fondasi aplikasi web multi-role di `apps/web`, berdasarkan dokumen dalam `docs/` serta keputusan pengguna. Checkpoint frontend mencakup scaffold, authentication dan context bootstrap (12.1–12.3). Tidak ada Flutter, dashboard bisnis, Personal Mode, Mushaf reader, teaching flow, analytics, laporan produk atau pembayaran.
 
 Status lengkap dan langkah melanjutkan ada di [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
-## Checkpoint aplikasi — 12.1–12.2
+## Checkpoint aplikasi — 12.3
 
 Panduan arsitektur, environment, security dan test: [MILESTONE_12.md](docs/MILESTONE_12.md).
 
@@ -13,7 +13,7 @@ pnpm install --frozen-lockfile
 pnpm dev:web:local
 ```
 
-Supabase lokal existing harus aktif. Buka `http://127.0.0.1:3000/login` dan gunakan akun existing. Perintah lokal membaca publishable key ke memori; tidak menulis credential. Pengujian browser: `pnpm test:web` memakai environment terpisah dan tidak mereset fixture utama. Berhenti setelah 12.2; switcher/context 12.3 belum diimplementasikan.
+Supabase lokal existing harus aktif. Buka `http://127.0.0.1:3000/login` dan gunakan akun existing. Perintah lokal membaca publishable key ke memori; tidak menulis credential. Setelah login, aplikasi memuat membership/scope backend, memilih satu context valid atau menampilkan halaman pilihan. Pengujian browser: `pnpm test:web` memakai environment terpisah dan tidak mereset fixture utama. Berhenti setelah 12.3; full role/context switcher 12.4 belum diimplementasikan.
 
 ## Backend — migration 1–11
 
@@ -39,7 +39,7 @@ Runner test/test:isolated/test:concurrency historis tetap menguji kontrak 1–7;
 
 ```text
 docs/                       spesifikasi asli + keputusan + panduan operasi
-apps/web/                   Next.js multi-role: scaffold + authentication
+apps/web/                   Next.js multi-role: auth + context bootstrap
 supabase/config.toml        konfigurasi Supabase lokal
 supabase/migrations/        sebelas migrasi SQL berurutan
 supabase/seed.sql           tanpa akun/data dummy permanen

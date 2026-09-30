@@ -1,5 +1,33 @@
 # Laporan pengujian backend foundation
 
+## Checkpoint 12.3 — hasil final (2026-10-01)
+
+| Pemeriksaan | Hasil | Cakupan/perintah |
+| --- | --- | --- |
+| Lint | PASS, 0 error/0 warning | pnpm lint:web |
+| Typecheck | PASS | web-local typegen + tsc --noEmit, serta TypeScript pada build final |
+| Production build | PASS | pnpm test:web membangun Next sebelum Chromium; login/app/context routes dinamis |
+| Unit | 31/31 PASS | pnpm test:web:unit; 11 existing + 20 context |
+| Browser | 38/38 PASS, 0 skipped | pnpm test:web; 16 existing Auth + 22 context, putaran final 1,2 menit |
+| Query-intent integration | PASS | Audit request gateway lab: own-profile/own-membership, explicit active scoped-program filter, tidak ada full institution/union business query |
+| Missing-profile guard | PASS | Jumlah profile fixture tetap 0 setelah bootstrap; preference invalid dibuang |
+| SQL/RLS foundation schema 11 | 53/53 PASS | node scripts/test-workflow-regression.mjs; 51 native + 2 embedded historis eksplisit |
+| Auth/JWT/PostgREST backend | 24/24 PASS | node scripts/test-workflow-api.mjs; multi-role, tenant isolation, scope/revocation, approval/provisioning |
+| Dependency audit | PASS | pnpm audit --audit-level high: No known vulnerabilities found |
+| Secret/ignore audit | PASS | 109 kandidat, 0 temuan pola secret/path terlarang, 12/12 probe ignore; index diperiksa ulang |
+
+Context browser: 0 institution dengan platform/Auth metadata yang tidak memberi context; 1 institution/1 role auto-select; beberapa institution; beberapa role tanpa privilege ranking; MUDIR+WALI terpisah dan tidak menyisakan tampilan mode sebelumnya; Wakil satu/multiple/institution scope; WAKIL+WALI; no scope/expired/revoked/inactive program tidak ditawarkan dan deep link ditolak; preference valid preselected, invalid dihapus dan minta pilihan ulang; deep link valid, foreign membership, mixed tenant IDs dan malformed IDs; logout/preference/back navigation; profil missing; context query error; invalidasi session selama bootstrap; keyboard/mobile.
+
+Unit juga menguji scope/membership/tenant mismatch, membership future/ended/deleted/inactive, expiry tepat batas, partial scope removal, unknown/platform role, pemisahan queryIntent serta preference palsu tidak mengganti role. Sebelas test boundary lama tetap menguji generation yang mencegah late response mengisi state mode/account lain.
+
+Dua putaran browser masing-masing 38/38. Putaran final dilakukan setelah penambahan pembersihan preference missing-profile/denied dan penguatan assertion own-profile/session-invalid; build final mengandung seluruh perubahan. Lint awal menolak setState langsung di effect; pembacaan preference kemudian memakai useSyncExternalStore, lint final bersih. Warning output warna dan AuthApiError pada negative refresh fixture adalah perilaku yang diharapkan.
+
+Semua account, tenant, governance dan data scope dibuat di lab native terpisah, login/JWT normal berasal dari Auth. Fault injection 503 context lookup dan 401 Auth setelah lookup hanya terdapat dalam gateway test, tidak dalam aplikasi. Scope expired/revoked/program inactive menggunakan record nyata lab. Fingerprint fixture utama public/Auth tetap identik setelah semua runner; container test dibersihkan. Migration 1–11 dan backend RLS/RPC identik.
+
+Screenshot sintetis reports/web-context-mobile.png diperiksa visual dan diabaikan Git. Baru Chromium lokal, bukan Firefox/WebKit/production. Bootstrap belum memuat data bisnis anak/monitoring/roster; full switcher dan isolasi query bisnis selanjutnya tetap scope milestone lain. Regression scheduler/concurrency/upgrade historis tidak diulang karena backend tidak diubah.
+
+Langkah tepat berikutnya: commit/push hasil yang lulus ke private main, verifikasi HEAD/remote/working tree, laporkan lalu BERHENTI sebelum 12.4.
+
 ## Checkpoint 12.1–12.2 — hasil final (2026-09-29)
 
 | Pemeriksaan | Hasil final | Perintah / bukti |

@@ -3,9 +3,10 @@ import { useState } from 'react';
 import { browserClient } from '@/lib/supabase/browser';
 import { Button } from '@/components/ui/button';
 import { useSessionContext } from './session-provider';
+import { clearPreference } from '@/features/context/preference';
 
 export function LogoutButton() {
-  const { dispatch } = useSessionContext();
+  const { state, dispatch } = useSessionContext();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   async function logout() {
@@ -13,6 +14,7 @@ export function LogoutButton() {
     try {
       const { error } = await browserClient().auth.signOut({ scope: 'local' });
       if (error) throw error;
+      if (state.userId) clearPreference(state.userId);
       dispatch({ type: 'clear' });
       window.location.replace('/login');
     } catch {

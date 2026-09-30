@@ -1,12 +1,38 @@
 # Milestone 12 — fondasi aplikasi web multi-role
 
-## Batas checkpoint 12.1–12.2
+## Checkpoint aktif: 12.3 context bootstrap (2026-10-01)
+
+Bootstrap memakai backend migration 1–11 tanpa perubahan schema, RPC atau RLS. Tidak ada migration baru. Pemilihan konteks awal sudah tersedia; full role/context switcher 12.4 belum dibuat.
+
+Alur: `/login` → `/app` memverifikasi Auth dan profile → context kosong menampilkan state khusus → satu konteks valid tanpa preferensi invalid masuk otomatis → beberapa konteks membuka `/app/select-context` → pilihan masuk `/app/i/[institutionId]/as/[membershipId]`. Deep link selalu menjalankan bootstrap baru dan mencocokkan kedua ID terhadap konteks milik caller; ID tidak diteruskan sebagai grant/role. Link salah menampilkan permission-denied generik tanpa data tenant tujuan.
+
+Sumber data, semuanya melalui session user dan RLS:
+
+1. Profile minimal dengan `auth_user_id` sesuai caller. Profil missing/disabled ditampilkan eksplisit, tanpa silent provisioning.
+2. `my_institutions()` memberi proyeksi terbatas lembaga aktif, bukan SELECT seluruh tabel institutions.
+3. `institution_members` dibatasi `profile_id` sendiri, institution IDs hasil RPC, status ACTIVE, joined_at yang sudah mulai, ended_at/deleted_at NULL; join role mengambil code/name backend.
+4. Membership MUDIR/WAKIL_MUDIR memakai `my_leadership_scopes()`. RPC menyaring revoked/start/expiry. Hasil dijoin lagi ke membership dan tenant yang tepat, expiry dicek saat membentuk model.
+5. Karena RPC scope belum menyaring program nonaktif, query metadata programs hanya memakai ID scope tersebut, institution IDs sah, is_active=true dan deleted_at=NULL. Tidak ada broad program query. Program tidak aktif menghilangkan scope tersebut dari model, tanpa mengubah grant backend.
+
+Satu selectable context mewakili **satu membership**, dengan institutionId/name, membershipId, roleCode/label backend, leadershipScopes, programScopeIds, scopeKind, revalidateAt dan metadata presentation/queryIntent. Multi-role tetap menjadi beberapa context; beberapa scope program Wakil menjadi satu context dengan daftar program eksplisit. No scope tidak pernah diartikan institution-wide. Role tidak dikenal/platform-only tidak dibuat menjadi context lembaga.
+
+Metadata queryIntent membedakan institution operations, institution monitoring, scoped monitoring, guardian relationships, teacher assignments dan student identity. Metadata ini hanya tujuan query/presentasi; belum ada query dashboard/roster/anak. Tidak memberikan permission approval. RLS tetap memeriksa setiap operasi di milestone berikutnya.
+
+Preferensi lokal hanya menyimpan pasangan institutionId/membershipId dengan key per auth user, tidak menyimpan role, token, scope atau data bisnis. Setiap bootstrap memeriksa ulang pasangan tersebut; invalid dihapus dan user memilih kembali (termasuk bila hanya satu context tersisa). Untuk beberapa context, preferensi valid hanya menandai pilihan terakhir; tidak melewati halaman pilihan dan tidak memilih privilege tertinggi. Storage tidak tersedia tidak menghalangi penggunaan aplikasi.
+
+Navigasi context memakai dokumen baru sehingga response/router state context sebelumnya tidak dipakai lagi. Context reducer tetap membersihkan payload dan menolak generation lama. Logout/account change membersihkan state dan preferensi caller; back/forward cache memicu revalidasi. Context aktif dengan expiry yang diketahui memicu bootstrap ulang pada batas expiry. Scope/revocation/perubahan program diperiksa ulang pada bootstrap/navigasi; tidak ada subscription realtime private table. Snapshot context bukan jaminan akses sampai refresh berikutnya; backend tetap final authority.
+
+File tambahan: domain/application-context, data/context-repository, application/bootstrap-context, features/context/*, shell/account-shell, dua route context, unit/context.test.ts, e2e/context.spec.ts dan fixture web-context-fixture.mjs. Tidak menambah package.
+
+Pengujian memakai lab native/Auth/PostgREST existing. Governance pimpinan fixture melalui RPC onboarding/verifikasi/invitation/redeem, bukan role metadata Auth. Negative expiry/revoked/program disabled disiapkan hanya pada lab. Gangguan context query dan invalidasi session di tengah bootstrap memakai fault injection pada gateway lab (bukan endpoint test dalam aplikasi). Missing-profile fixture menonaktifkan trigger hanya saat satu signup lab dan mengaktifkannya kembali; runner memeriksa aplikasi tidak membuat profile tersebut diam-diam.
+
+## Fondasi yang tetap berlaku dari 12.1–12.2
 
 Implementasi berada di `apps/web`, memakai Next.js App Router + TypeScript, React, Tailwind dan Supabase SSR. Aplikasi ini milik seluruh role yang diizinkan backend; bukan aplikasi khusus Admin Lembaga. Migration 1–11, RLS, RPC dan fixture utama tidak diubah.
 
 Tersedia: login email/password untuk akun existing, logout sesi browser saat ini, cookie session/persistence/refresh, protected `/app`, profil akun sendiri, redirect internal, loading/error/access state, indikator koneksi dasar. Halaman `/app` adalah konfirmasi akun, bukan dashboard bisnis.
 
-Belum tersedia: institution/role switcher (12.3), navigation bisnis, dashboard, manajemen akun, invitation UI, teaching flow, Flutter, Super Admin, analytics, laporan, offline storage/queue/sync. Tidak ada signup, forgot-password atau OAuth UI pada checkpoint ini.
+Belum tersedia: full institution/role switcher (12.4), navigation bisnis, dashboard, manajemen akun, invitation UI, teaching flow, Flutter, Super Admin, analytics, laporan, offline storage/queue/sync. Tidak ada signup, forgot-password atau OAuth UI pada checkpoint ini.
 
 ## Struktur dan batas tanggung jawab
 
@@ -36,13 +62,13 @@ Semantic tokens memisahkan warna, tipografi, radius, shadow dan motion dari busi
 - Redirect hanya menuju `/app` yang sudah diimplementasikan. Tujuan eksternal, protocol-relative, backslash, query/path lain semuanya kembali ke `/app`. Allowlist perlu diperluas eksplisit saat route baru ditambahkan.
 - Error ke pengguna generik; detail database/upstream tidak ditampilkan. Client tidak memperoleh service_role, database password, permission provisioning atau privilege baru.
 
-## Kontrak context untuk 12.3
+## Batas context untuk pengembangan berikutnya
 
-Reducer menampung `userId`, `contextKey`, generation dan data presentasi di memori. Pergantian account/context mengosongkan data sebelum load; respons dari generation lama diabaikan. Reducer tidak menetapkan role aktif database dan tidak mengesahkan context yang dipilih. Tidak ada switcher atau query data role pada 12.2.
+Reducer menampung `userId`, `contextKey`, generation dan data presentasi di memori. Pergantian account/context mengosongkan data sebelum load; respons dari generation lama diabaikan. Reducer tidak menetapkan role aktif database dan tidak mengesahkan context yang dipilih.
 
-Pada 12.3, context harus dibentuk dari membership/relationship/scope backend yang valid. Setiap repository wajib memilih query/proyeksi sesuai mode, dengan filter institution/relationship/program eksplisit. Mode Wali membaca relasi anak VERIFIED; Mudir menggunakan monitoring yang diizinkan; Wakil hanya scope aktif. **Dilarang mengambil union seluruh data yang dapat dibaca lalu menyembunyikan sebagian di UI.** No scope tidak berarti full access.
+Setiap repository bisnis berikutnya wajib memilih query/proyeksi sesuai mode, dengan filter institution/relationship/program eksplisit. Mode Wali membaca relasi anak VERIFIED; Mudir menggunakan monitoring yang diizinkan; Wakil hanya scope aktif. **Dilarang mengambil union seluruh data yang dapat dibaca lalu menyembunyikan sebagian di UI.** No scope tidak berarti full access. Memiliki context GUARDIAN/TEACHER/STUDENT tidak membuktikan hubungan anak/assignment/enrollment tertentu masih valid; query bisnis nanti wajib memeriksanya melalui backend.
 
-Acceptance reducer sudah memeriksa data mode/institution lama terhapus dan respons terlambat ditolak. Browser menguji logout dan pergantian akun tanpa sisa profil lama. Acceptance browser untuk switcher Wali/Mudir/Wakil sebenarnya baru dapat dilakukan pada 12.3; bukan fitur yang diklaim selesai sekarang.
+Acceptance reducer memeriksa data mode/institution lama terhapus dan respons terlambat ditolak. Browser menguji selection/deep link antar-context, logout dan pergantian akun tanpa sisa tampilan. Pengujian penuh switcher 12.4 serta isolasi data dashboard/anak tetap menunggu implementasi fitur tersebut.
 
 Repository/data adapter dipisahkan supaya durable storage, queue, retry dan conflict handling dapat ditambahkan kemudian. Tidak ada service worker, cache offline, fake sync status, atau antrean mutasi pada checkpoint ini.
 

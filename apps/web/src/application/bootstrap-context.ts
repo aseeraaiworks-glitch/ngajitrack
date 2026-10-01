@@ -4,6 +4,7 @@ import { authenticatedAccount } from './authenticated-account';
 import { serverClient } from '@/lib/supabase/server';
 import { contextSources } from '@/data/context-repository';
 import { buildContexts } from '@/domain/application-context';
+import { reportUnexpected } from '@/lib/observability/report';
 
 export async function bootstrapContext() {
   const account = await authenticatedAccount();
@@ -11,9 +12,10 @@ export async function bootstrapContext() {
   const client = await serverClient();
   let sources;
   try { sources = await contextSources(client, account.profile.id); }
-  catch {
+  catch (cause) {
     const { data: { user }, error } = await client.auth.getUser();
     if (!user && (!error || (error.status && error.status < 500))) redirect('/login');
+    reportUnexpected(cause);
     return { ...account, status: 'error' as const, contexts: [], institutionCount: 0 };
   }
   // A session invalidated while bootstrap was loading must not produce a context.

@@ -1,5 +1,37 @@
 # Laporan pengujian NgajiTrack
 
+## Checkpoint 12.6 — hasil final acceptance / Sentry (2026-10-02)
+
+| Pemeriksaan | Hasil | Bukti/perintah |
+| --- | --- | --- |
+| Lint | PASS, 0 error/0 warning | pnpm lint:web |
+| Typecheck | PASS | pnpm --filter @ngajitrack/web exec tsc --noEmit; build juga TypeScript |
+| Unit | 51/51 PASS | pnpm test:web:unit; 43 existing + 8 privacy/config/transport |
+| Production build | PASS tanpa DSN dan SDK enabled | Runner membangun produksi untuk kedua konfigurasi, termasuk TypeScript |
+| Acceptance browser tanpa DSN | 71/71 PASS, 0 skipped | reports/web-12.6-e2e-final.txt; seluruh 71 existing; 3,5 menit |
+| Browser Sentry enabled | 6/6 PASS, 0 skipped | reports/web-12.6-sentry-final.txt; receiver lokal; 28,5 detik |
+| SQL/RLS schema 11 | 53/53 PASS | reports/web-12.6-sql.txt; 51 native + 2 embedded historis |
+| Auth/JWT/PostgREST | 24/24 PASS | reports/web-12.6-api.txt; multi-tenant/role/scope/approval/provisioning |
+| Dependency audit | PASS | pnpm audit --audit-level high: No known vulnerabilities found |
+| Secret/ignore audit | PASS; index diperiksa sebelum commit | 151 kandidat, 0 temuan pola secret/literal DSN/path sensitif; 12/12 ignore probe |
+| Public source maps | PASS, 0 file | .next/static tanpa opt-in source-map upload |
+| Migration 1–11 | Tidak berubah | Git diff; tidak ada apply migration baru |
+| Fixture / query / envelope audit | PASS | Public/Auth identik, container dibersihkan; explicit query intent/no union data; error-only envelope tanpa credential header |
+
+Delapan unit baru mencakup disabled DSN/default env, validasi DSN/release tanpa echo secret, redaction seluruh payload sensitif, expected error/Next control flow, canonical route tanpa IDs/query, disabled replay/tracing/log/session/metrics, debug ID source-map aman, serta HTTP transport akhir yang membuang metadata SDK/attachment dan tidak mengirim cookie/authorization/referrer.
+
+Enam skenario browser SDK enabled: unexpected client exception; unhandled promise rejection; login salah/no-context/permission denial tidak mengirim crash; logout lalu error tanpa identitas/session lama; handled unexpected context-service failure; server-render/runtime dan route handler /app/context-options failure dengan client error boundary aman serta retry setelah pemulihan. Tidak ada route test pada aplikasi; error client berasal dari Playwright dan server failure memakai fault lab existing. Payload hanya diterima/diuji dalam memori pada receiver loopback.
+
+Suite acceptance 71 existing mencakup Auth/refresh/logout lintas tab, disabled/missing profile, zero/one/multiple institution, multi-role/scope, preference dan deep link, cross-tenant denial, switching/fresh validation/late request, revoke tanpa stale UI, responsive/keyboard/contrast/reduced motion, offline wording dan error recovery. Query gateway tetap memeriksa own-profile/own-membership/scoped program, tanpa union business data. Matriks lengkap berada di docs/MILESTONE_12.md.
+
+Iterasi awal: TypeScript menyesuaikan exports/types SDK 11 (withSentryConfig pindah ke /config); unit Node ESM menemukan re-export createTransport tidak tersedia dari wrapper Next, sehingga memakai direct API @sentry/core versi yang sama. Browser monitoring awal 4/5: satu selector alert ambigu dengan route announcer Next, diperjelas menjadi #login-error. Capture client, async, logout privacy dan server/boundary retry sudah lulus pada putaran tersebut. Test ditambah untuk handled service failure dan route runtime; putaran final 6/6 dan seluruh acceptance tanpa DSN 71/71. Log failure awal bukan hasil akhir.
+
+Saat sesi dilanjutkan pada 2026-10-02, laporan lengkap mengonfirmasi kedua runner telah selesai dengan audit dan cleanup; tidak mengulang implementasi atau suite yang sudah tuntas. Lint, typecheck, dependency/secret/Git audit difinalisasi lagi. Pesan Profile could not be loaded dan negative refresh AuthApiError berasal dari fault fixture yang diharapkan, tanpa session/token; UI tetap generik. Warning FORCE_COLOR/NO_COLOR hanya format output.
+
+Batas: Chromium lokal; belum Firefox/WebKit/Edge deployment/Sentry hosted. Tidak ada DSN/token production; upload source map dan symbolication nyata belum diuji. Filter sengaja menghilangkan pesan bebas/function/snippet/identitas sehingga debugging lebih terbatas. Tidak ada replay, tracing atau offline sync. SDK HTTP tujuan tetap memproses metadata jaringan; kebijakan payload bukan anonimitas jaringan. Regresi scheduler/concurrency/upgrade tidak diulang karena backend tidak berubah.
+
+**Acceptance Milestone 12.1–12.6 lulus**, tanpa failure/skipped pada hasil final. Langkah tepat berikutnya: audit index, commit/push private main dan verifikasi sinkronisasi/clean, lalu BERHENTI setelah 12.6.
+
 ## Checkpoint 12.5 — hasil final App Shell (2026-10-01)
 
 | Pemeriksaan | Hasil | Cakupan/perintah |

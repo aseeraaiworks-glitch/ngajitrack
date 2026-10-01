@@ -1,6 +1,27 @@
 # Milestone 12 — fondasi aplikasi web multi-role
 
-## Checkpoint aktif: 12.5 App Shell (2026-10-01)
+## Milestone 12 selesai: 12.6 acceptance dan Sentry (2026-10-02)
+
+SDK resmi `@sentry/nextjs` dan API transport `@sentry/core` dipin ke 11.2.0; core sudah merupakan dependency SDK dan dicantumkan langsung karena dipakai langsung. Next 16.3.7, Auth, domain context, repository/query, switcher dan App Shell existing tetap dipertahankan. Migration 1–11 tidak berubah.
+
+Inisialisasi client/server/Edge hanya berlangsung bila DSN env valid tersedia. Hook request Next menangkap runtime/render error; error boundary dan global error boundary menjaga pesan aman serta retry. Bootstrap yang menangani kegagalan layanan context melaporkan unexpected exception setelah sesi diperiksa, tanpa mengubah keputusan akses. Expected login/permission/no-context/revocation tidak diperlakukan sebagai crash.
+
+Filter membentuk ulang event dari allowlist metadata teknis dan transport memeriksa ulang envelope akhir. Tidak mengirim user/tenant identity, request, token/cookie, header/body/query, pesan error bebas, form, catatan belajar, breadcrumbs, session/replay/log/trace atau attachment. Tracing, replay dan fitur telemetry tambahan dimatikan. Tidak ada public test route. Environment, release, optional CI source maps, prosedur aktivasi dan batas privacy dijelaskan dalam [OBSERVABILITY.md](OBSERVABILITY.md).
+
+Acceptance Milestone 12 ditutup: build/lint/typecheck PASS, unit 51/51, browser tanpa DSN 71/71, browser SDK enabled 6/6, SQL/RLS 53/53, Auth/JWT/API 24/24, audit dependency/secret lulus. Fixture utama tetap identik. Cakupan verifikasi:
+
+| Alur | Bukti acceptance |
+| --- | --- |
+| 12.1 Scaffold | Production build, lint, TypeScript, env/key validation, dependency audit |
+| 12.2 Auth/Profile | Login salah/benar, refresh, reload, logout/back/multi-tab, invalid session, disabled/missing profile, safe redirect |
+| 12.3 Context bootstrap | Zero/one/multiple institution, multi-role, scope institution/program/jamak, no/expired/revoked scope, preference revalidation, deep link dan cross-tenant denial |
+| 12.4 Switching | Fresh validation, pembatalan/late request, stale payload cleanup, program focus, dua tab independen, revoke dan retry |
+| 12.5 Shell | Desktop/mobile/tablet, keyboard/focus/Escape, contrast tokens, reduced motion, offline wording, error/permission/loading/empty state |
+| 12.6 Observability | Build/acceptance tanpa DSN, receiver lokal dengan SDK enabled, client exception/rejection, server route/render/handled failure, safe boundary/retry, expected-error exclusion, redaction HTTP akhir |
+
+Hasil aktual ada di TEST_REPORT.md. Scope deployment tetap terpisah: belum ada DSN/project Sentry produksi, upload/symbolication nyata, Edge deployment atau Firefox/WebKit. Revoke idle tetap memakai boundary revalidation 12.4; RLS memutuskan akses setiap operasi. Tidak memulai halaman bisnis, teaching, Flutter, offline sync, analytics atau report.
+
+## Fondasi 12.5: App Shell (2026-10-01)
 
 Area authenticated memakai `AccountShell` untuk SessionProvider dan `AppShell` untuk layout. `ShellFrame` hanya menampilkan label tenant/role dan navigasi context bila key context reducer masih cocok dengan context server tervalidasi. Invalidasi dari switcher mengosongkan label dan link lama bersamaan dengan payload/content. Route tanpa context sah hanya menampilkan area akun/pilihan context; profile missing tidak mendapat navigasi role. Error sebelum bootstrap selesai tidak memakai ulang shell akun sebelumnya.
 

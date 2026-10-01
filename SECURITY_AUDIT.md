@@ -1,5 +1,16 @@
 # Audit sebelum publikasi Git
 
+## Checkpoint 12.6 (2026-10-02)
+
+- 151 kandidat source/config/docs/test dipindai: 0 temuan pola JWT, private key, private API/GitHub/Sentry token, literal DSN atau path sensitif. 12/12 probe ignore lulus. .env*, credential/key, .next, reports, browser output, cache/log dan runtime tetap dikecualikan. Index diperiksa ulang sebelum commit; audit pola dilengkapi review diff, bukan jaminan seluruh format secret.
+- SDK @sentry/nextjs dan transport API @sentry/core dipin 11.2.0. Core sudah dependency SDK, ditambahkan langsung karena kode mengimpor API tersebut. pnpm menambah pengecualian release-age untuk 14 package Sentry versi tepat 11.2.0, bukan wildcard/global bypass. pnpm audit --audit-level high tidak menemukan kerentanan dikenal; Next/Supabase tidak di-upgrade.
+- Default SDK integrations dimatikan. Hanya error monitoring diperlukan yang diinisialisasi; server OpenTelemetry, trace propagation, breadcrumbs, replay, logs, metrics, session tracking, attachments dan client reports tidak dikirim. Tidak memakai setUser; account/profile/membership/institution tidak menjadi identity telemetry.
+- beforeSend membentuk event baru dari allowlist. Transport memeriksa ulang dan hanya mengirim envelope error tanpa request/body/header/cookie/token/PII, pesan bebas, locals/source snippets atau arbitrary context. HTTP memakai credentials omit/no-referrer; tidak meneruskan header aplikasi. Unit memeriksa payload HTTP akhir, bukan hanya return value sanitizer. Public generated source map pada build tanpa upload: 0.
+- DSN opsional, tidak disimpan dalam repository. SENTRY_AUTH_TOKEN hanya untuk opt-in CI upload, tidak menjadi NEXT_PUBLIC atau config.env. Source map/debug ID support disiapkan; upload ke project nyata belum dilakukan. Metadata jaringan HTTP tetap diproses penerima; pengaturan retensi/PII/IP dan akses project Sentry perlu ditinjau saat deployment.
+- Receiver Sentry dan protocol key acak hanya lab loopback; bukan project/credential produksi. Runner mengosongkan DSN dan token upload yang diwarisi. Tidak ada public test route, tunnel atau endpoint administrative dalam aplikasi. Laporan tidak merekam payload session/telemetry mentah.
+- Auth, role/scope, context URL validation, queries, switcher, shell dan Migration 1–11 tidak diubah. Satu tambahan pada catch bootstrap melaporkan unexpected lookup failure setelah pemeriksaan sesi; tidak mengubah keputusan permission. RLS tetap final authority, scope UI tidak mengubah grant database. Review source tidak menemukan logging session/token atau penggunaan service_role dalam aplikasi.
+- Acceptance tanpa DSN 71/71 dan SDK enabled 6/6 lulus dengan audit envelope/query akhir serta fingerprint fixture utama identik. Salah login, no-context dan denied tidak menghasilkan crash; client/server/route/boundary failure tertangkap tanpa pesan bebas/identitas/session lama. Private repository, branch main dan izin push diverifikasi sebelum publikasi.
+
 ## Checkpoint 12.5 (2026-10-01)
 
 - 138 kandidat source/config/docs/test dipindai: 0 temuan pola secret atau path sensitif; 12/12 probe ignore lulus. Index diperiksa ulang sebelum commit. .env*, credential/key, generated Next output, cache/log, reports dan output browser tetap dikecualikan. Scan berbasis pola dilengkapi review source/diff; bukan jaminan semua format secret.

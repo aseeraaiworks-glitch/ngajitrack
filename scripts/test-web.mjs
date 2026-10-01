@@ -10,6 +10,7 @@ import { schedulerLab } from './scheduler-lab.mjs';
 import { authApiLab } from './auth-api-lab.mjs';
 import { webContextFixture } from '../tests/web-context-fixture.mjs';
 import assert from 'node:assert/strict';
+import { sentryLab } from './sentry-lab.mjs';
 
 const web = new URL('../apps/web/', import.meta.url);
 const require = createRequire(new URL('package.json', web));
@@ -21,12 +22,14 @@ function child(file, args, env, background = false) {
   if (background) return processChild;
   return new Promise((resolve, reject) => { processChild.on('error', reject); processChild.on('exit', code => code === 0 ? resolve() : reject(Error(`Web command failed (exit ${code})`))); });
 }
-let lab, api, gateway, app, contextFixture;
+let lab, api, gateway, app, contextFixture, monitoring;
+const monitoringEnabled = process.argv.includes('--monitoring');
 const requests = [];
 let invalidateDuringBootstrap = false;
 let failProfileLookup = true;
 const controlToken = randomBytes(32).toString('hex');
 try {
+  monitoring = await sentryLab(controlToken);
   lab = await schedulerLab({ through: '20260926001100' });
   api = await authApiLab(lab);
   gateway = createServer(async (req, res) => {
@@ -95,6 +98,11 @@ try {
   const rejected = await fetch(api.auth + '/user', { headers: { Authorization: `Bearer ${expiredSession.access_token}` } });
   if (rejected.ok) throw Error('Expired fixture token unexpectedly accepted');
   const env = {
+    // Never inherit real monitoring endpoints or build-upload credentials into test runs.
+    NEXT_PUBLIC_SENTRY_DSN: monitoringEnabled ? monitoring.dsn : '',
+    NEXT_PUBLIC_SENTRY_ENVIRONMENT: 'test', NEXT_PUBLIC_SENTRY_RELEASE: '0.1.0',
+    SENTRY_DSN: '', SENTRY_AUTH_TOKEN: '', SENTRY_ORG: '', SENTRY_PROJECT: '', SENTRY_UPLOAD_SOURCEMAPS: 'false',
+    NGT_WEB_MONITORING: monitoringEnabled ? 'enabled' : '', NGT_WEB_MONITORING_EVENTS_URL: monitoring.eventsUrl,
     NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${apiPort}`,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_' + randomBytes(24).toString('hex'),
     NEXT_TELEMETRY_DISABLED: '1',
@@ -113,7 +121,8 @@ try {
   let ready = false;
   for (let i = 0; i < 60; i++) { try { if ((await fetch(env.NGT_WEB_TEST_URL + '/login')).ok) { ready = true; break; } } catch {} await setTimeout(500); }
   if (!ready) throw Error('Production web server did not start');
-  await child(playwright, ['test', ...process.argv.slice(2)], env);
+  await child(playwright, ['test', ...process.argv.slice(2).filter(value => value !== '--monitoring')], env);
+  monitoring.verify(monitoringEnabled);
   const own = new Map(Object.values(contextFixture.accounts).map(a => [a.id, a.profileId]));
   for (const { userId, route } of requests) {
     const query = new URL(route, 'http://localhost');
@@ -138,4 +147,5 @@ try {
   if (gateway) { gateway.closeAllConnections(); await new Promise(resolve => gateway.close(resolve)); }
   if (api) await api.close();
   if (lab) await lab.close();
+  if (monitoring) await monitoring.close();
 }

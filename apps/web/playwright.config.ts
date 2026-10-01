@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
+  ...(process.env.NGT_WEB_MONITORING === 'enabled' ? { testMatch: '**/observability.spec.ts' } : { testIgnore: '**/observability.spec.ts' }),
   fullyParallel: false,
   workers: 1,
   retries: 0,

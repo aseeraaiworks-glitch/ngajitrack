@@ -71,12 +71,19 @@ test('single program scope can select its explicit focus and persists after relo
 });
 test('multiple program scopes switch A to B and back to all assigned without broadening', async ({ page }) => {
   await enter(page, 'deputyMultiple', 'WAKIL_MUDIR');
-  for (const [id, label] of [[fixture.programs.a, 'Cakupan program: Program a'], [fixture.programs.other, 'Cakupan program: Program aOther'], ['', 'Cakupan program: Program a, Program aOther']]) {
+  for (const { id, programs } of [
+    { id: fixture.programs.a, programs: ['Program a'] },
+    { id: fixture.programs.other, programs: ['Program aOther'] },
+    { id: '', programs: ['Program a', 'Program aOther'] },
+  ]) {
     const dialog = await open(page);
     await dialog.getByLabel('Cakupan program', { exact: true }).selectOption(id);
     await dialog.getByRole('button', { name: 'Pindah konteks' }).click();
     await expect(dialog).not.toBeVisible();
-    await expect(page.getByTestId('active-scope')).toHaveText(label);
+    // The backend guarantees the assigned set, not a display order for program metadata.
+    const scope = page.getByTestId('active-scope');
+    await expect(scope).toHaveText(/^Cakupan program: /);
+    await expect.poll(async () => (await scope.innerText()).replace('Cakupan program: ', '').split(', ').sort()).toEqual(programs);
     expect(new URL(page.url()).searchParams.get('program')).toBe(id || null);
   }
 });

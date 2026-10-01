@@ -13,7 +13,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   return <main id="main" className="mx-auto flex min-h-dvh max-w-6xl items-center px-6 py-12 sm:px-10">
     <div className="grid w-full gap-12 lg:grid-cols-2 lg:items-center lg:gap-24">
       <div className="animate-enter">
-        <div className="mb-10 inline-flex items-center gap-3 text-xl font-semibold tracking-tight"><span aria-hidden="true" className="flex size-10 items-center justify-center rounded-xl bg-brand text-white">N</span>NgajiTrack</div>
+        <div className="mb-10 inline-flex items-center gap-3 text-xl font-semibold tracking-tight"><span aria-hidden="true" className="flex size-10 items-center justify-center rounded-control bg-brand text-on-brand">N</span>NgajiTrack</div>
         <p className="mb-4 text-sm font-semibold uppercase tracking-[.18em] text-brand">Belajar · Terhubung · Bertumbuh</p>
         <h1 className="max-w-lg text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">Satu akun.<br /><span className="text-brand">Setiap peran berarti.</span></h1>
         <p className="mt-6 max-w-md text-base leading-7 text-muted">Selamat datang kembali di ruang belajar Anda. Masuk untuk melanjutkan perjalanan bersama NgajiTrack.</p>

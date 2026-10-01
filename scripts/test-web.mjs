@@ -24,6 +24,7 @@ function child(file, args, env, background = false) {
 let lab, api, gateway, app, contextFixture;
 const requests = [];
 let invalidateDuringBootstrap = false;
+let failProfileLookup = true;
 const controlToken = randomBytes(32).toString('hex');
 try {
   lab = await schedulerLab({ through: '20260926001100' });
@@ -35,10 +36,17 @@ try {
     res.setHeader('Cache-Control', 'no-store');
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
     const route = req.url ?? '/';
-    // Narrow fixture control in the disposable loopback gateway, never in Next.
-    if (route === '/__lab/revoke-switch-scope') {
+    if (route === '/__lab/restore-profile-lookup') {
       if (req.method !== 'POST' || req.headers.authorization !== 'Bearer ' + controlToken) { res.writeHead(403); res.end(); return; }
-      try { await contextFixture.revokeLiveScope(); res.writeHead(204); res.end(); }
+      failProfileLookup = false; res.writeHead(204); res.end(); return;
+    }
+    // Narrow fixture control in the disposable loopback gateway, never in Next.
+    if (route === '/__lab/revoke-switch-scope' || route === '/__lab/revoke-shell-scope') {
+      if (req.method !== 'POST' || req.headers.authorization !== 'Bearer ' + controlToken) { res.writeHead(403); res.end(); return; }
+      try {
+        await (route === '/__lab/revoke-shell-scope' ? contextFixture.revokeShellScope() : contextFixture.revokeLiveScope());
+        res.writeHead(204); res.end();
+      }
       catch { res.writeHead(500); res.end(); }
       return;
     }
@@ -47,6 +55,9 @@ try {
     let userId;
     try { userId = JSON.parse(Buffer.from(String(req.headers.authorization).split('.')[1], 'base64url').toString()).sub; } catch { /* Anonymous request. */ }
     if (route.startsWith('/rest/v1/')) requests.push({ userId, route });
+    if (contextFixture && userId === contextFixture.accounts.boundaryError.id && route.startsWith('/rest/v1/profiles?') && failProfileLookup) {
+      res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"message":"synthetic private profile failure"}'); return;
+    }
     // Deterministic fault injection only in the lab gateway; never in app routes.
     if (contextFixture && route === '/rest/v1/rpc/my_institutions') {
       if (userId === contextFixture.accounts.loadError.id) { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"message":"synthetic context outage"}'); return; }
@@ -93,6 +104,8 @@ try {
     NGT_WEB_TEST_EXPIRED_SESSION: JSON.stringify(expiredSession),
     NGT_WEB_CONTEXT_FIXTURE: JSON.stringify(contextFixture),
     NGT_WEB_LAB_CONTROL_URL: `http://127.0.0.1:${apiPort}/__lab/revoke-switch-scope`,
+    NGT_WEB_SHELL_CONTROL_URL: `http://127.0.0.1:${apiPort}/__lab/revoke-shell-scope`,
+    NGT_WEB_RESTORE_PROFILE_URL: `http://127.0.0.1:${apiPort}/__lab/restore-profile-lookup`,
     NGT_WEB_LAB_CONTROL_TOKEN: controlToken,
   };
   await child(next, ['build'], env);
@@ -100,7 +113,7 @@ try {
   let ready = false;
   for (let i = 0; i < 60; i++) { try { if ((await fetch(env.NGT_WEB_TEST_URL + '/login')).ok) { ready = true; break; } } catch {} await setTimeout(500); }
   if (!ready) throw Error('Production web server did not start');
-  await child(playwright, ['test'], env);
+  await child(playwright, ['test', ...process.argv.slice(2)], env);
   const own = new Map(Object.values(contextFixture.accounts).map(a => [a.id, a.profileId]));
   for (const { userId, route } of requests) {
     const query = new URL(route, 'http://localhost');

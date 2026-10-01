@@ -1,12 +1,19 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useOnline } from './online-status';
+import { useToast } from '@/components/ui/toast';
 
 export function ConnectionStatus() {
-  const [offline, setOffline] = useState(false);
+  const online = useOnline();
+  const showToast = useToast();
   useEffect(() => {
-    const update = () => setOffline(!navigator.onLine);
-    update(); window.addEventListener('online', update); window.addEventListener('offline', update);
+    let previous = navigator.onLine;
+    const update = () => {
+      if (!previous && navigator.onLine) showToast('Terhubung kembali. Muat ulang halaman untuk memeriksa data terbaru.');
+      previous = navigator.onLine;
+    };
+    window.addEventListener('online', update); window.addEventListener('offline', update);
     return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
-  }, []);
-  return offline ? <p role="status" className="border-b border-line bg-soft px-5 py-3 text-center text-sm text-warning">Anda sedang offline. Masuk dan memuat data memerlukan koneksi internet.</p> : null;
+  }, [showToast]);
+  return !online ? <p role="status" data-testid="offline-warning" className="bg-warning-soft px-5 py-3 text-center text-sm text-warning">Anda sedang offline. Koneksi terputus. Sinkronisasi offline belum tersedia.</p> : null;
 }

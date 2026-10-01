@@ -1,29 +1,95 @@
 @import "tailwindcss";
 
+/* Semantic palette: override one token layer, never the business components. */
+:root {
+  color-scheme: light;
+  --ngt-canvas: #f5f7f3;
+  --ngt-surface: #ffffff;
+  --ngt-ink: #172e29;
+  --ngt-muted: #52665f;
+  --ngt-brand: #17634f;
+  --ngt-brand-hover: #104d3d;
+  --ngt-on-brand: #ffffff;
+  --ngt-soft: #e8f1ea;
+  --ngt-line: #d9e3da;
+  --ngt-success: #17634f;
+  --ngt-success-soft: #e8f1ea;
+  --ngt-warning: #76500c;
+  --ngt-warning-soft: #fff3d9;
+  --ngt-danger: #a22b32;
+  --ngt-danger-soft: #fceced;
+  --ngt-info: #275879;
+  --ngt-info-soft: #eaf3fa;
+  --ngt-overlay: #10272066;
+  --ngt-shadow: 0 12px 48px #172e2908;
+  --ngt-shadow-overlay: 0 24px 80px #172e2924;
+  --motion-fast: 140ms;
+  --motion-standard: 200ms;
+  --motion-ease: cubic-bezier(.2, .8, .2, 1);
+}
+/* Token readiness only: no theme preference or theme-switching UI yet. */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --ngt-canvas: #101a17; --ngt-surface: #182620;
+  --ngt-ink: #eef5ef; --ngt-muted: #b7c8bd;
+  --ngt-brand: #90d6b5; --ngt-brand-hover: #ace7cb; --ngt-on-brand: #10271d;
+  --ngt-soft: #223b2e; --ngt-line: #3c5447;
+  --ngt-success: #90d6b5; --ngt-success-soft: #223b2e;
+  --ngt-warning: #f4ce86; --ngt-warning-soft: #3b3020;
+  --ngt-danger: #ffb4b8; --ngt-danger-soft: #462a30;
+  --ngt-info: #a9d5f5; --ngt-info-soft: #203747;
+  --ngt-overlay: #00000088;
+  --ngt-shadow: 0 12px 48px #00000018; --ngt-shadow-overlay: 0 24px 80px #00000040;
+}
+@theme inline {
+  --color-canvas: var(--ngt-canvas);
+  --color-surface: var(--ngt-surface);
+  --color-ink: var(--ngt-ink);
+  --color-muted: var(--ngt-muted);
+  --color-brand: var(--ngt-brand);
+  --color-brand-hover: var(--ngt-brand-hover);
+  --color-on-brand: var(--ngt-on-brand);
+  --color-soft: var(--ngt-soft);
+  --color-line: var(--ngt-line);
+  --color-success: var(--ngt-success);
+  --color-success-soft: var(--ngt-success-soft);
+  --color-warning: var(--ngt-warning);
+  --color-warning-soft: var(--ngt-warning-soft);
+  --color-danger: var(--ngt-danger);
+  --color-danger-soft: var(--ngt-danger-soft);
+  --color-info: var(--ngt-info);
+  --color-info-soft: var(--ngt-info-soft);
+  --color-overlay: var(--ngt-overlay);
+  --shadow-card: var(--ngt-shadow);
+  --shadow-overlay: var(--ngt-shadow-overlay);
+}
 @theme {
-  --color-canvas: #f5f7f3;
-  --color-surface: #ffffff;
-  --color-ink: #172e29;
-  --color-muted: #52665f;
-  --color-brand: #17634f;
-  --color-brand-hover: #104d3d;
-  --color-soft: #e8f1ea;
-  --color-line: #d9e3da;
-  --color-danger: #a22b32;
-  --color-danger-soft: #fceced;
-  --color-warning: #825910;
   --font-sans: "Segoe UI", system-ui, sans-serif;
+  --text-page: 1.875rem;
+  --text-page--line-height: 1.25;
+  --text-caption: .75rem;
+  --spacing: .25rem;
+  --spacing-shell: 2rem;
   --radius-card: 1.5rem;
   --radius-control: .75rem;
-  --shadow-card: 0 12px 48px #172e2908;
-  --animate-enter: enter .25s ease-out;
+  --animate-enter: enter var(--motion-standard) var(--motion-ease);
+  --animate-drawer: drawer-enter var(--motion-standard) var(--motion-ease);
+  --animate-toast: toast-enter var(--motion-standard) var(--motion-ease);
 }
 
-:root { color-scheme: light; }
-body { background: var(--color-canvas); color: var(--color-ink); }
+body { background: var(--ngt-canvas); color: var(--ngt-ink); }
 button, a, input { -webkit-tap-highlight-color: transparent; }
-:focus-visible { outline: 3px solid var(--color-brand); outline-offset: 4px; }
+:focus-visible { outline: 3px solid var(--ngt-brand); outline-offset: 4px; }
+.motion-control { transition-duration: var(--motion-fast); transition-timing-function: var(--motion-ease); }
+.shell-layout { min-height: 100dvh; }
+.shell-body { min-width: 0; }
+@media (min-width: 64rem) {
+  .shell-layout { display: grid; grid-template-columns: 16rem minmax(0, 1fr); transition: grid-template-columns var(--motion-standard) var(--motion-ease); }
+  .shell-layout[data-collapsed="true"] { grid-template-columns: 5.5rem minmax(0, 1fr); }
+}
 @keyframes enter { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@keyframes drawer-enter { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+@keyframes toast-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

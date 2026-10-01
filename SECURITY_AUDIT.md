@@ -1,5 +1,14 @@
 # Audit sebelum publikasi Git
 
+## Checkpoint 12.5 (2026-10-01)
+
+- 138 kandidat source/config/docs/test dipindai: 0 temuan pola secret atau path sensitif; 12/12 probe ignore lulus. Index diperiksa ulang sebelum commit. .env*, credential/key, generated Next output, cache/log, reports dan output browser tetap dikecualikan. Scan berbasis pola dilengkapi review source/diff; bukan jaminan semua format secret.
+- Shell menerima context hasil validasi server dan memeriksa kecocokan context key aktif sebelum menampilkan tenant/role/navigation. Invalidasi switcher menghilangkan label/link/payload lama. Menu hanya berisi route ringkasan/pilihan context existing; tidak membuka operasi baru atau mengambil union permission. Program focus dipertahankan dalam link tervalidasi.
+- Auth/session, domain context, bootstrap/repository, cookie, URL validation, abort/generation dan backend tetap memakai contract existing. Tidak ada service_role/credential baru dalam aplikasi. Migration 1–11, schema/RLS/RPC dan dependency tidak berubah; dependency audit bersih. Error boundary generik tidak memperlihatkan detail upstream atau shell yang belum lolos verifikasi.
+- Avatar memakai inisial profile sendiri, tanpa network image. Sidebar/menu hanya menyimpan state sementara per dokumen. Toast saat ini hanya informasi koneksi umum; tidak menyimpan data bisnis atau klaim sinkronisasi. Theme hanya token architecture, tanpa storage/preference baru.
+- Harness browser memakai scope revocation melalui RPC governance lab, bukan perubahan pada fixture utama. Fault profile lookup dan pemulihannya hanya gateway loopback lab dengan kontrol tetap/token acak runtime. Tidak ada test route atau administrative operation baru pada aplikasi.
+- GitHub tujuan terverifikasi private, main, izin push tersedia. Revoke saat idle masih mengikuti revalidation boundary 12.4; RLS tetap pemeriksa setiap operasi, bukan hidden menu. Tidak melakukan deployment atau mengklaim offline sync.
+
 ## Checkpoint 12.4 (2026-10-01)
 
 - 117 kandidat source/config/docs/test diperiksa: 0 temuan pola JWT/private key/private API key/credential atau path sensitif; 12/12 probe ignore lulus. Index diperiksa ulang sebelum commit. .env*, keys, credential, generated output, cache/log, reports dan output browser tetap dikecualikan. Scan pola dilengkapi review diff; bukan jaminan semua format secret.

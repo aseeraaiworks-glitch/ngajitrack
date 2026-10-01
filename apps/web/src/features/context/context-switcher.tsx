@@ -8,9 +8,11 @@ import { clearPreference } from './preference';
 import { ContextSelector } from './context-selector';
 import { ContextState } from './context-states';
 import { Button } from '@/components/ui/button';
+import { Dialog } from '@/components/ui/dialog';
 
-export function ContextSwitcher({ context, userId, children }: {
+export function ContextSwitcher({ context, userId, children, render }: {
   context: ApplicationContext; userId: string; children: ReactNode;
+  render?: (trigger: ReactNode, content: ReactNode) => ReactNode;
 }) {
   const { dispatch } = useSessionContext();
   const dialog = useRef<HTMLDialogElement>(null);
@@ -72,26 +74,11 @@ export function ContextSwitcher({ context, userId, children }: {
       setPhase('error');
     }
   }
+  const control = <Button ref={trigger} variant="secondary" aria-haspopup="dialog" onClick={open}>Ganti konteks</Button>;
+  const content = unavailable ? <ContextState kind={phase === 'switching' ? 'switching' : 'unavailable'} /> : children;
   return <>
-    <div className="mb-4 flex justify-end">
-      <Button ref={trigger} variant="secondary" aria-haspopup="dialog" onClick={open}>Ganti konteks</Button>
-    </div>
-    {unavailable ? <ContextState kind={phase === 'switching' ? 'switching' : 'unavailable'} /> : children}
-    <dialog ref={dialog} aria-labelledby="context-switch-title" onCancel={event => { event.preventDefault(); close(); }}
-      onKeyDown={event => {
-        if (event.key !== 'Tab') return;
-        const controls = [...event.currentTarget.querySelectorAll<HTMLElement>('button, input, select, a[href], [tabindex="0"]')]
-          .filter(node => !node.matches(':disabled') && node.getClientRects().length > 0);
-        const first = controls[0], last = controls.at(-1);
-        if (!first || !last) return;
-        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-      }}
-      className="fixed inset-0 m-auto max-h-[85dvh] w-[min(36rem,calc(100%-2rem))] overflow-auto rounded-card border border-line bg-surface p-6 text-ink shadow-card backdrop:bg-ink/30">
-      <div className="flex items-center justify-between gap-4">
-        <h2 id="context-switch-title" className="text-xl font-semibold">Ganti konteks</h2>
-        <Button variant="secondary" onClick={close} autoFocus>Tutup</Button>
-      </div>
+    {render ? render(control, content) : <><div className="mb-4 flex justify-end">{control}</div>{content}</>}
+    <Dialog ref={dialog} title="Ganti konteks" onDismiss={close}>
       {phase === 'loading' && <ContextState kind="loading" />}
       {phase === 'switching' && <ContextState kind="switching" />}
       {phase === 'error' && <div className="mt-5 space-y-4"><p role="alert">Konteks belum dapat diperiksa. Coba lagi setelah koneksi tersedia.</p><Button onClick={open}>Coba lagi</Button></div>}
@@ -99,6 +86,6 @@ export function ContextSwitcher({ context, userId, children }: {
       {phase === 'ready' && (options.length ? <ContextSelector key={options.map(contextKey).join('|') + message}
         contexts={options} initial={resolveContext(options, context)} onSelect={select} submitLabel="Pindah konteks" /> :
         <p role="status" className="mt-5">Belum ada konteks yang tersedia. Hubungi pengelola lembaga.</p>)}
-    </dialog>
+    </Dialog>
   </>;
 }

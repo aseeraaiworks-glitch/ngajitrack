@@ -1,4 +1,35 @@
-# Laporan pengujian backend foundation
+# Laporan pengujian NgajiTrack
+
+## Checkpoint 12.5 — hasil final App Shell (2026-10-01)
+
+| Pemeriksaan | Hasil | Cakupan/perintah |
+| --- | --- | --- |
+| Lint | PASS, 0 error/0 warning | pnpm lint:web; diulang setelah koreksi test urutan program |
+| Typecheck | PASS | web-local typegen + tsc --noEmit; build produksi final juga TypeScript; tsc diulang saat finalisasi |
+| Production build | PASS | pnpm test:web membangun Next produksi sebelum Chromium |
+| Unit | 43/43 PASS | pnpm test:web:unit; 39 existing + 4 navigation/token |
+| Browser/E2E | 71/71 PASS, 0 skipped | pnpm test:web; 53 existing + 18 shell; Chromium produksi, 3,9 menit |
+| Query-intent integration | PASS | Audit actual request own-profile/own-membership/scoped program; tanpa business union preload atau silent profile provisioning |
+| SQL/RLS schema 11 | 53/53 PASS | node scripts/test-workflow-regression.mjs; 51 native + 2 embedded historis eksplisit |
+| Auth/JWT/PostgREST backend | 24/24 PASS | node scripts/test-workflow-api.mjs; tenant/role/scope/approval/provisioning |
+| Main fixture preservation | PASS | Fingerprint public/Auth identik sebelum/sesudah SQL/API/browser; container lab dibersihkan |
+| Dependency audit | PASS | pnpm audit --audit-level high: No known vulnerabilities found |
+| Secret/ignore audit | PASS | 138 kandidat, 0 temuan pola secret/path sensitif; 12/12 probe ignore; index diperiksa sebelum commit |
+| Migration/dependency diff | PASS | Migration 1–11, schema/RLS/RPC, manifest/lock dan domain context/bootstrap/repository tidak berubah |
+
+Delapan belas test browser baru: sidebar desktop collapse/expand dan lebar content; drawer mobile 320/390/768px tanpa horizontal overflow, keyboard/focus trap/return/Escape dan target sentuh; drawer ditutup pada resize desktop; enam role navigation (Admin/Mudir/Wakil/Wali/Ustaz/Santri) dengan scoped URL; pending switch menghilangkan identitas/link/content lama dan memunculkan loading; pencabutan scope melalui RPC lab menutup navigasi lama tetapi mempertahankan Wali; foreign tenant deep link ditolak; online/offline dan dismiss toast; reduced motion dan override token dark; dialog profile/logout/back; invalid session/reload; no-context tanpa role navigation; error profile server generik dan retry yang memulihkan shell setelah layanan kembali.
+
+Empat unit baru memastikan navigation hanya context terpilih (enam role), program focus tetap sempit, context kosong/invalid/unknown tidak mendapat privileged navigation, serta contrast teks/status/button minimal 4.5:1 pada palette light dan dark yang disiapkan. Seluruh test unit Auth/reducer/context/switcher existing tetap dijalankan.
+
+Iterasi pengujian dicatat: putaran browser pertama 70/71, satu fault lookup sekali jalan ternyata dipulihkan oleh retry SDK. Fault dibuat persisten sampai pemulihan eksplisit. Targeted error-boundary run berikutnya 0/1 mengungkap reset tidak memuat ulang data server; memakai callback retry Next yang melakukan refresh + reset, dengan reload fallback. Putaran lengkap berikutnya 70/71: error/retry lulus, satu test existing program jamak mengasumsikan urutan metadata yang tidak dijamin backend. Assertion kini membandingkan set lengkap (tanpa program kurang/lebih), tidak memperlonggar scope atau mengubah query. Hasil putaran final dicatat pada tabel di atas.
+
+Error AuthApiError negative refresh dan Profile could not be loaded pada fault injection adalah expected; detail upstream tidak ditampilkan di UI. Warning FORCE_COLOR/NO_COLOR hanya output runner. Tidak ada test endpoint pada aplikasi; kontrol restore/revoke fixed-action hanya gateway lab loopback dengan token acak runtime. Login/JWT normal berasal dari Auth lab, bukan service_role di client. Fixture utama tidak di-reset.
+
+Bukti lokal diabaikan Git: reports/web-12.5-e2e.txt, web-12.5-error-retry.txt, web-12.5-e2e-final.txt, web-12.5-sql.txt, web-12.5-api.txt; screenshot web-shell-desktop.png, web-shell-mobile.png dan web-shell-drawer.png diperiksa visual. Suite akhir dijalankan ulang sesudah koreksi assertion; file laporan final berisi putaran terakhir. Saat melanjutkan sesi, log mengonfirmasi test 69–71, audit gateway dan cleanup sudah selesai; tidak mengulang suite yang lulus. Typecheck dan pemeriksaan Git diulang saat finalisasi. Scheduler/concurrency/upgrade historis tidak diulang karena backend tidak berubah.
+
+Batas: Chromium lokal, belum browser lain/deployment; contrast test palette bukan audit aksesibilitas menyeluruh. Revoke idle mengikuti bootstrap/switcher/submit/reload/known expiry, bukan subscription realtime. Online indicator bukan API health/sync; dark mode baru token readiness. Belum ada query bisnis anak/monitoring/roster, sehingga isolasi query bisnis tersebut tidak diklaim telah diuji.
+
+Seluruh hasil final lulus, tanpa test gagal/skipped. Langkah tepat berikutnya: audit index, commit/push private main, verifikasi HEAD/remote/working tree lalu **BERHENTI sebelum 12.6**. Sentry dan fitur lain tidak dimulai.
 
 ## Checkpoint 12.4 — hasil final (2026-10-01)
 

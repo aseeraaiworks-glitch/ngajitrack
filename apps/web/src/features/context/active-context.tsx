@@ -5,7 +5,6 @@ import { useSessionContext } from '@/features/auth/session-provider';
 import { savePreference } from './preference';
 import { ContextState } from './context-states';
 import { CurrentContextLabel } from './current-context-label';
-import { ContextSwitcher } from './context-switcher';
 
 export function ActiveContext({ context, userId }: { context: ApplicationContext; userId: string }) {
   const { state, dispatch } = useSessionContext();
@@ -22,7 +21,5 @@ export function ActiveContext({ context, userId }: { context: ApplicationContext
     }, 1000) : undefined;
     return () => { if (timer !== undefined) window.clearInterval(timer); };
   }, [context, dispatch, key, userId]);
-  return <ContextSwitcher context={context} userId={userId}>
-    {state.contextKey === key ? <CurrentContextLabel context={context} /> : <ContextState kind="loading" />}
-  </ContextSwitcher>;
+  return state.contextKey === key ? <CurrentContextLabel context={context} /> : <ContextState kind="loading" />;
 }

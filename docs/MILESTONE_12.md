@@ -1,6 +1,26 @@
 # Milestone 12 — fondasi aplikasi web multi-role
 
-## Checkpoint aktif: 12.4 context / role switcher (2026-10-01)
+## Checkpoint aktif: 12.5 App Shell (2026-10-01)
+
+Area authenticated memakai `AccountShell` untuk SessionProvider dan `AppShell` untuk layout. `ShellFrame` hanya menampilkan label tenant/role dan navigasi context bila key context reducer masih cocok dengan context server tervalidasi. Invalidasi dari switcher mengosongkan label dan link lama bersamaan dengan payload/content. Route tanpa context sah hanya menampilkan area akun/pilihan context; profile missing tidak mendapat navigasi role. Error sebelum bootstrap selesai tidak memakai ulang shell akun sebelumnya.
+
+Desktop mulai 64rem memakai sidebar persistent yang dapat diciutkan menjadi ikon berlabel aksesibel. Tablet/mobile memakai drawer native dialog; saat viewport berubah ke desktop, drawer ditutup agar konten tidak tertinggal inert. TopBar berisi akun, logout, lembaga/role aktif, indikator koneksi dan switcher 12.4. Main content memakai lebar maksimum 72rem. Seluruh URL/context switching, validasi server, generation, abort dan session handling 12.4 tetap berlaku; domain context/bootstrap/repository dan backend tidak diubah.
+
+Model `navigationFor` hanya menerima context aktif, bukan daftar union role akun. Menu per mode berlabel Ruang administrasi, Ruang kepemimpinan, Ruang wali, Ruang pengajaran, atau Ruang santri; semuanya menuju **ringkasan context existing**, bukan dashboard/operasi bisnis. Link kedua membuka Pilihan konteks. Wakil dengan fokus program mempertahankan `?program=` pada link. Tidak ada menu bisnis palsu, disabled roadmap, permission baru, atau query bisnis baru. Navigation tetap presentasi; server/RLS memutuskan akses.
+
+Komponen bersama: AppShell, Sidebar, TopBar, MobileNavigation, NavigationItem, ProfileMenu/Avatar, OnlineStatus, Toast/ToastProvider, Dialog, Surface, PageHeader, Badge, Input/Field, Button, Skeleton/LoadingState, EmptyState, ErrorState dan PermissionDeniedState. CurrentContextLabel dipakai untuk ringkasan dan versi ringkas header. ContextSwitcher memakai Dialog bersama serta slot render untuk menempatkan pemicu di header; logic validasi tidak disalin. No-context/unavailable/offline memakai state dan palette bersama.
+
+Token terpusat pada `styles/globals.css`: palette semantic canvas/surface/ink/muted/brand/on-brand/line, success/warning/error/info beserta background, spacing dasar, typography page/caption, radius, shadow dan motion. Alias Tailwind mengambil CSS variables sehingga palette bisa diganti tanpa menyentuh logic. Blok `[data-theme="dark"]` menyiapkan palette dark; tidak ada theme switcher/preference atau perubahan tema otomatis pada milestone ini. Motion CSS singkat 140–200ms untuk kontrol/sidebar, kemunculan content/dialog/drawer/toast; skeleton memakai animasi pulse existing. Semua animasi/transisi dinonaktifkan oleh prefers-reduced-motion.
+
+Dialog berbagi focus trap, auto-focus tombol Tutup, Escape dan pengembalian fokus. Desktop navigation memakai aria-current dan link ikon tetap memiliki accessible name saat diciutkan. Main content bisa dituju skip link. Tombol navigasi mobile minimal 48px. ProfileMenu menampilkan identitas akun existing tanpa query/credential tambahan. Toast memiliki status/alert, tombol dismiss dan umur 8 detik; saat ini digunakan untuk pemberitahuan koneksi kembali, bukan notification inbox/server.
+
+Online/Offline berasal dari `navigator.onLine` dan event browser, **bukan** pemeriksaan kesehatan API atau bukti sinkronisasi. Peringatan: "Anda sedang offline. Koneksi terputus. Sinkronisasi offline belum tersedia." Koneksi kembali hanya menyarankan memuat ulang halaman. Tidak ada queue, durable storage, autosync, klaim penyimpanan offline, atau indikator "tersinkron" buatan.
+
+Loading boundary `/app` tidak memperlihatkan akun/context sebelum verifikasi selesai. Error boundary memakai pesan generik dan callback retry Next (refresh data server + reset), dengan reload fallback; reset saja tidak mengambil ulang payload server yang gagal. Session invalid tetap menuju login dan membersihkan state sesuai provider existing. Revoke masih diperiksa saat bootstrap/switcher/submit/reload dan known expiry seperti 12.4; tidak ada subscription realtime baru. Test mencabut scope nyata ketika shell terbuka dan memeriksa header/navigation lama hilang.
+
+Fixture/runner lab menambah akun revocation shell terpisah dan gangguan profile lookup yang dipulihkan secara eksplisit untuk error boundary/retry. Fault tetap aktif selama SDK mencoba ulang request; kontrol pemulihan hanya di gateway loopback lab dengan token runtime. Tidak mengubah fixture utama. Tidak menambah dependency, migration atau halaman bisnis. Hasil final: build/lint/typecheck PASS, unit 43/43, browser 71/71 termasuk seluruh regresi switcher 12.4, SQL/RLS 53/53 dan Auth/JWT/API 24/24. Bukti dan batas pengujian ada di TEST_REPORT.md. Berhenti setelah 12.5; 12.6, Sentry, dashboard, Flutter, analytics/report dan offline sync belum dimulai.
+
+## Fondasi 12.4: context / role switcher (2026-10-01)
 
 `ContextSwitcher`, `ContextSelector`, dan `CurrentContextLabel` tersedia sebagai komponen terpisah. Selector dipakai ulang oleh pemilihan awal 12.3 dan dialog switcher. Dialog native memakai label lembaga/peran/program, keyboard radio/select, focus trap, Escape dan pengembalian fokus ke tombol pemicu. Token visual dan aturan reduced motion existing tetap dipakai; tidak ada dependency baru atau dashboard bisnis.
 
@@ -22,7 +42,7 @@ Revalidasi terjadi ketika membuka switcher, submit, navigasi/reload, dan expiry 
 
 Tambahan file: route `app/context-options`, `application/latest-request`, `data/context-options`, tiga komponen switcher/selector/label, unit `context-switch.test.ts`, E2E `switcher.spec.ts`. Domain context, active-context, chooser, states, preference dan route context diperluas untuk fokus program. Button menerima ref untuk pengembalian fokus. Fixture/runner menambah satu akun scope yang dapat dicabut melalui RPC governance di lab; endpoint kontrol lab dibatasi satu aksi fixture dengan token acak runtime, hanya loopback, dan tidak menjadi bagian aplikasi.
 
-Migration 1–11, schema/RLS/RPC produk, permission, approval dan provisioning tidak berubah. Hasil uji ada di `TEST_REPORT.md`. Berhenti setelah 12.4; tidak memulai 12.5 App Shell, halaman bisnis atau Flutter.
+Migration 1–11, schema/RLS/RPC produk, permission, approval dan provisioning tidak berubah. Integrasi layout 12.5 dijelaskan di atas; mekanisme validasi switching tetap dipertahankan.
 
 ## Fondasi 12.3: context bootstrap (2026-10-01)
 
@@ -92,7 +112,7 @@ Reducer menampung `userId`, `contextKey`, generation dan data presentasi di memo
 
 Setiap repository bisnis berikutnya wajib memilih query/proyeksi sesuai mode, dengan filter institution/relationship/program eksplisit. Mode Wali membaca relasi anak VERIFIED; Mudir menggunakan monitoring yang diizinkan; Wakil hanya scope aktif. **Dilarang mengambil union seluruh data yang dapat dibaca lalu menyembunyikan sebagian di UI.** No scope tidak berarti full access. Memiliki context GUARDIAN/TEACHER/STUDENT tidak membuktikan hubungan anak/assignment/enrollment tertentu masih valid; query bisnis nanti wajib memeriksanya melalui backend.
 
-Acceptance reducer memeriksa data mode/institution lama terhapus dan respons terlambat ditolak. Browser menguji selection/deep link antar-context, logout dan pergantian akun tanpa sisa tampilan. Pengujian penuh switcher 12.4 serta isolasi data dashboard/anak tetap menunggu implementasi fitur tersebut.
+Acceptance reducer memeriksa data mode/institution lama terhapus dan respons terlambat ditolak. Browser menguji selection/deep link, switcher 12.4 dan integrasi shell 12.5, logout dan pergantian akun tanpa sisa tampilan. Isolasi query bisnis dashboard/anak wajib diuji ketika fitur tersebut diimplementasikan.
 
 Repository/data adapter dipisahkan supaya durable storage, queue, retry dan conflict handling dapat ditambahkan kemudian. Tidak ada service worker, cache offline, fake sync status, atau antrean mutasi pada checkpoint ini.
 

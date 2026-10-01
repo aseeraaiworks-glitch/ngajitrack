@@ -1,10 +1,10 @@
 # NgajiTrack
 
-Backend Supabase/PostgreSQL migration 1–11 dan fondasi aplikasi web multi-role di `apps/web`, berdasarkan dokumen dalam `docs/` serta keputusan pengguna. Checkpoint frontend mencakup scaffold, authentication, context bootstrap dan context/role switcher (12.1–12.4). Tidak ada Flutter, dashboard bisnis, Personal Mode, Mushaf reader, teaching flow, analytics, laporan produk atau pembayaran.
+Backend Supabase/PostgreSQL migration 1–11 dan fondasi aplikasi web multi-role di `apps/web`, berdasarkan dokumen dalam `docs/` serta keputusan pengguna. Checkpoint frontend mencakup scaffold, authentication, context bootstrap/switcher dan responsive App Shell (12.1–12.5). Tidak ada Flutter, dashboard bisnis, Personal Mode, Mushaf reader, teaching flow, analytics, laporan produk atau pembayaran.
 
 Status lengkap dan langkah melanjutkan ada di [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
-## Checkpoint aplikasi — 12.4
+## Checkpoint aplikasi — 12.5
 
 Panduan arsitektur, environment, security dan test: [MILESTONE_12.md](docs/MILESTONE_12.md).
 
@@ -13,7 +13,7 @@ pnpm install --frozen-lockfile
 pnpm dev:web:local
 ```
 
-Supabase lokal existing harus aktif. Buka `http://127.0.0.1:3000/login` dan gunakan akun existing. Perintah lokal membaca publishable key ke memori; tidak menulis credential. Setelah login, aplikasi memuat membership/scope backend, memilih satu context valid atau menampilkan halaman pilihan. Tombol **Ganti konteks** memvalidasi ulang lembaga, peran dan fokus program sebelum berpindah; URL setiap tab tetap independen. Pengujian browser: `pnpm test:web` memakai environment terpisah dan tidak mereset fixture utama. Berhenti setelah 12.4; App Shell 12.5 belum dimulai.
+Supabase lokal existing harus aktif. Buka `http://127.0.0.1:3000/login` dan gunakan akun existing. Perintah lokal membaca publishable key ke memori; tidak menulis credential. Setelah login, aplikasi memuat membership/scope backend, memilih satu context valid atau menampilkan halaman pilihan. Shell memakai sidebar desktop dan drawer tablet/mobile. Tombol **Ganti konteks** memvalidasi ulang lembaga, peran dan fokus program sebelum berpindah; URL setiap tab tetap independen. Navigasi menuju ringkasan/pilihan context yang sudah tersedia. Online/Offline hanya menunjukkan koneksi perangkat; sinkronisasi offline belum tersedia. Pengujian browser: `pnpm test:web` memakai environment terpisah dan tidak mereset fixture utama. Berhenti setelah 12.5; 12.6 belum dimulai.
 
 ## Backend — migration 1–11
 
@@ -39,7 +39,7 @@ Runner test/test:isolated/test:concurrency historis tetap menguji kontrak 1–7;
 
 ```text
 docs/                       spesifikasi asli + keputusan + panduan operasi
-apps/web/                   Next.js multi-role: auth + context bootstrap/switcher
+apps/web/                   Next.js multi-role: auth + context + responsive shell
 supabase/config.toml        konfigurasi Supabase lokal
 supabase/migrations/        sebelas migrasi SQL berurutan
 supabase/seed.sql           tanpa akun/data dummy permanen

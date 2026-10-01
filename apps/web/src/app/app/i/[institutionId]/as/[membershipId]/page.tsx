@@ -15,7 +15,7 @@ export default async function ContextPage({ params, searchParams }: {
   const { program } = await searchParams;
   const result = await bootstrapContext();
   const context = Array.isArray(program) ? null : resolveContext(result.contexts, { ...ids, programId: program });
-  return <AccountShell userId={result.userId} profile={result.profile}>
+  return <AccountShell userId={result.userId} profile={result.profile} context={context}>
     {result.status === 'error' ? <ContextState kind="error" /> : context ?
       <ActiveContext context={context} userId={result.userId} /> : <>
         <ValidatePreference contexts={result.contexts} userId={result.userId} /><ContextState kind="denied" />

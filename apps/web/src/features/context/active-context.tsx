@@ -4,7 +4,8 @@ import { contextKey, type ApplicationContext } from '@/domain/application-contex
 import { useSessionContext } from '@/features/auth/session-provider';
 import { savePreference } from './preference';
 import { ContextState } from './context-states';
-import { StateCard } from '@/components/ui/state-card';
+import { CurrentContextLabel } from './current-context-label';
+import { ContextSwitcher } from './context-switcher';
 
 export function ActiveContext({ context, userId }: { context: ApplicationContext; userId: string }) {
   const { state, dispatch } = useSessionContext();
@@ -21,11 +22,7 @@ export function ActiveContext({ context, userId }: { context: ApplicationContext
     }, 1000) : undefined;
     return () => { if (timer !== undefined) window.clearInterval(timer); };
   }, [context, dispatch, key, userId]);
-  if (state.contextKey !== key) return <ContextState kind="loading" />;
-  return <StateCard title={context.roleLabel}>
-    <p data-testid="active-institution" className="font-semibold text-ink">{context.institutionName}</p>
-    <p className="mt-2" data-testid="active-scope">{context.scopeKind === 'INSTITUTION' ? 'Cakupan seluruh lembaga' :
-      context.scopeKind === 'PROGRAMS' ? 'Cakupan program: ' + context.programLabels.join(', ') : 'Sesuai hubungan dan penugasan Anda'}</p>
-    <p className="mt-6">Konteks Anda sudah siap. Fitur untuk peran ini akan tersedia pada tahap berikutnya.</p>
-  </StateCard>;
+  return <ContextSwitcher context={context} userId={userId}>
+    {state.contextKey === key ? <CurrentContextLabel context={context} /> : <ContextState kind="loading" />}
+  </ContextSwitcher>;
 }

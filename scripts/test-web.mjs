@@ -24,6 +24,7 @@ function child(file, args, env, background = false) {
 let lab, api, gateway, app, contextFixture;
 const requests = [];
 let invalidateDuringBootstrap = false;
+const controlToken = randomBytes(32).toString('hex');
 try {
   lab = await schedulerLab({ through: '20260926001100' });
   api = await authApiLab(lab);
@@ -34,6 +35,13 @@ try {
     res.setHeader('Cache-Control', 'no-store');
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
     const route = req.url ?? '/';
+    // Narrow fixture control in the disposable loopback gateway, never in Next.
+    if (route === '/__lab/revoke-switch-scope') {
+      if (req.method !== 'POST' || req.headers.authorization !== 'Bearer ' + controlToken) { res.writeHead(403); res.end(); return; }
+      try { await contextFixture.revokeLiveScope(); res.writeHead(204); res.end(); }
+      catch { res.writeHead(500); res.end(); }
+      return;
+    }
     const upstream = route.startsWith('/auth/v1/') ? api.auth + route.slice(8) : route.startsWith('/rest/v1/') ? api.rest + route.slice(8) : null;
     if (!upstream) { res.writeHead(404); res.end(); return; }
     let userId;
@@ -84,6 +92,8 @@ try {
     NGT_WEB_TEST_PASSWORD: password,
     NGT_WEB_TEST_EXPIRED_SESSION: JSON.stringify(expiredSession),
     NGT_WEB_CONTEXT_FIXTURE: JSON.stringify(contextFixture),
+    NGT_WEB_LAB_CONTROL_URL: `http://127.0.0.1:${apiPort}/__lab/revoke-switch-scope`,
+    NGT_WEB_LAB_CONTROL_TOKEN: controlToken,
   };
   await child(next, ['build'], env);
   app = child(next, ['start', '--hostname', '127.0.0.1', '--port', String(port)], env, true);

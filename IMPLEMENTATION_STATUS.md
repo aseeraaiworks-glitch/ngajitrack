@@ -1,5 +1,20 @@
 # Status implementasi NgajiTrack
 
+## Checkpoint 12.4 — selesai (2026-10-01)
+
+- Context/role switcher tersedia di apps/web melalui ContextSwitcher, ContextSelector reusable dan CurrentContextLabel. Pilihan lembaga/peran berasal dari bootstrap backend terbaru; dialog memiliki loading, switching, unavailable/retry, keyboard, focus trap/return dan Escape. Tidak menambah package atau App Shell 12.5.
+- GET /app/context-options memverifikasi Auth/profile/context dengan sesi caller, private/no-store. Menu dibuka dan submit sama-sama memvalidasi ulang. Submit membersihkan state/payload/preference lama, membatalkan/menolak respons lama melalui abort + generation, lalu navigasi dokumen penuh. Route tujuan memverifikasi lagi; tidak ada mutasi permission/membership.
+- Wakil program jamak tetap satu membership; dapat memilih semua program yang ditugaskan atau satu fokus program lewat ?program=. Fokus mempersempit DTO/scope/query intent dan harus cocok dengan bootstrap. Tidak ada scope berarti tidak ada akses leadership. Parameter program asing/berulang dan pasangan tenant/membership salah ditolak.
+- URL per tab menjadi sumber presentasi; preference per user hanya menyimpan pasangan ID dan programId opsional, selalu divalidasi ulang. Switching satu tab tidak mengganti mode tab lain. Logout tetap membersihkan context/preference dan keluar lintas tab.
+- Hasil final: lint 0 error/0 warning; typecheck/build produksi PASS; unit 39/39; browser 53/53 (16 Auth + 22 bootstrap existing + 15 switcher); SQL/RLS 53/53; Auth/JWT/API 24/24. Gateway membuktikan filter query explicit dan tidak ada preload business data union role. Tidak ada failure/skipped pada hasil final.
+- Putaran browser awal 50/53 menemukan label select program yang perlu asosiasi eksplisit dan fokus Tab akhir dialog. Diperbaiki dengan htmlFor/id dan focus wrap; putaran final 53/53. Pesan pembatalan dibuat netral karena pembatalan tidak berarti permission dicabut. Screenshot mobile/reduced-motion diperiksa.
+- Migration dibuat/applied: tidak ada. Migration 1–11, schema/RLS/RPC, dependency dan fixture utama public/Auth identik. Test memakai lab native/Auth/PostgREST terpisah; scope dicabut melalui RPC governance fixture, bukan mengubah instance utama. Lab dibersihkan oleh runner.
+- File baru: apps/web/src/app/app/context-options/route.ts, application/latest-request.ts, data/context-options.ts, features/context/context-switcher.tsx, context-selector.tsx, current-context-label.tsx, tests/unit/context-switch.test.ts, tests/e2e/switcher.spec.ts. File diubah: domain context, active-context/chooser/states/preference, route context dan Button; scripts/test-web.mjs, tests/web-context-fixture.mjs; README, docs/MILESTONE_12.md, IMPLEMENTATION_STATUS.md, TEST_REPORT.md, SECURITY_AUDIT.md.
+- Security: 117 kandidat file, 0 temuan pola secret/path sensitif; 12/12 probe ignore lulus, dependency audit bersih. Repository target terverifikasi private/main dengan izin push. Index diperiksa ulang sebelum commit; env/key/credential/report/cache tetap dikecualikan.
+- Batas: Chromium lokal; belum Firefox/WebKit/staging/production. Revoke saat halaman diam diperiksa pada pembukaan switcher/submit/navigasi/reload atau known expiry, bukan realtime. RLS selalu boundary otorisasi. Belum ada query bisnis anak/monitoring/roster; isolasi query bisnis berikutnya wajib mengikuti context eksplisit. Tidak ada blocker schema atau issue pengujian terbuka untuk 12.4.
+- Publikasi: commit/push biasa ke private main setelah seluruh test lulus; hash dan hasil sinkronisasi dilaporkan setelah Git selesai.
+- Langkah tepat berikutnya: verifikasi HEAD lokal = origin/main = remote main dan working tree clean, laporkan hasil checkpoint lalu **BERHENTI**. Jangan mulai 12.5, dashboard, Flutter atau offline sync tanpa instruksi berikutnya.
+
 ## Checkpoint 12.3 — selesai (2026-10-01)
 
 - Context bootstrap, selection awal dan deep link terverifikasi sudah dibuat di apps/web. Sumber: own profile, my_institutions, own active membership+role, my_leadership_scopes, proyeksi program aktif yang dirujuk scope. Tidak ada query data bisnis union role atau hard-coded account context.

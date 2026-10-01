@@ -10,7 +10,8 @@ export function clearPreference(userId: string) {
   window.dispatchEvent(new Event('ngajitrack-preference'));
 }
 export function savePreference(userId: string, context: ContextReference) {
-  try { localStorage.setItem(preferenceKey(userId), JSON.stringify({ institutionId: context.institutionId, membershipId: context.membershipId })); }
+  try { localStorage.setItem(preferenceKey(userId), JSON.stringify({ institutionId: context.institutionId, membershipId: context.membershipId,
+    ...(context.programId ? { programId: context.programId } : {}) })); }
   catch { /* Context remains usable without persistent preference. */ }
   window.dispatchEvent(new Event('ngajitrack-preference'));
 }

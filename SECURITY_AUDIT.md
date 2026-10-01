@@ -1,5 +1,14 @@
 # Audit sebelum publikasi Git
 
+## Checkpoint 12.4 (2026-10-01)
+
+- 117 kandidat source/config/docs/test diperiksa: 0 temuan pola JWT/private key/private API key/credential atau path sensitif; 12/12 probe ignore lulus. Index diperiksa ulang sebelum commit. .env*, keys, credential, generated output, cache/log, reports dan output browser tetap dikecualikan. Scan pola dilengkapi review diff; bukan jaminan semua format secret.
+- Switcher memakai GET session-bound dengan bootstrap baru, no-store/private, tanpa mutasi membership/role atau penggunaan service_role. URL/preference optional program focus harus cocok dengan tenant, membership dan program scope aktif yang dikembalikan backend; fokus hanya mempersempit DTO. Parameter program ganda/asing ditolak. Endpoint tidak menerima caller identity atau memberikan grant.
+- Dialog memuat pilihan ulang saat dibuka dan dipilih. Revoke/partial scope change membatalkan presentasi lama. Pending switch membuang payload/generation lama; AbortController dan generation menolak respons terlambat. Navigasi dokumen baru membuang state/router cache. URL per tab tetap independen, sedangkan logout/account change tetap berlaku lintas tab.
+- Tidak ada query bisnis union role atau broad monitoring preload. Gateway test memeriksa actual own-profile/own-membership dan active scoped-program filters. Batas pembacaan anak/monitoring bisnis masih harus diterapkan pada repository yang baru akan dibuat pada milestone berikutnya.
+- Revocation test memakai satu endpoint kontrol fixture di gateway loopback terpisah, hanya menerima satu operasi tetap dan token acak runtime. RPC pencabutan dijalankan sebagai Mudir fixture. Tidak ada test hook, privileged key, password/token literal, atau administrative endpoint baru dalam aplikasi Next.
+- GitHub target kembali terverifikasi private/main dengan izin push. Dependency audit tidak menemukan kerentanan dikenal. Migration 1–11, RLS/RPC produk dan dependency identik. Revalidasi scope saat idle belum realtime; backend tetap boundary otorisasi setiap operasi.
+
 ## Checkpoint 12.3 (2026-10-01)
 
 - 109 kandidat source/config/docs/test diperiksa: 0 temuan pola secret atau path sensitif; 12/12 probe ignore lulus. .env*, keys, credential, .next, runtime/cache/log, node_modules, reports dan Playwright output tetap dikecualikan. Index dipindai ulang sebelum commit.

@@ -1,8 +1,32 @@
 # Milestone 12 — fondasi aplikasi web multi-role
 
-## Checkpoint aktif: 12.3 context bootstrap (2026-10-01)
+## Checkpoint aktif: 12.4 context / role switcher (2026-10-01)
 
-Bootstrap memakai backend migration 1–11 tanpa perubahan schema, RPC atau RLS. Tidak ada migration baru. Pemilihan konteks awal sudah tersedia; full role/context switcher 12.4 belum dibuat.
+`ContextSwitcher`, `ContextSelector`, dan `CurrentContextLabel` tersedia sebagai komponen terpisah. Selector dipakai ulang oleh pemilihan awal 12.3 dan dialog switcher. Dialog native memakai label lembaga/peran/program, keyboard radio/select, focus trap, Escape dan pengembalian fokus ke tombol pemicu. Token visual dan aturan reduced motion existing tetap dipakai; tidak ada dependency baru atau dashboard bisnis.
+
+Alur perpindahan:
+
+1. Membuka dialog menjalankan `GET /app/context-options` dengan cookie sesi sendiri. Endpoint melakukan bootstrap server yang sama seperti route terlindungi: Auth sebelum/sesudah query, profile sendiri, active memberships, scope dan program aktif. Response hanya metadata navigasi milik caller, `private, no-store`, `Vary: Cookie`; tidak menerima identity/role dari request dan tidak memiliki operasi mutasi.
+2. Selama memuat, opsi lama tidak ditampilkan. Jika konteks aktif sudah hilang atau cakupannya berubah, state/payload/preferensi lama dibersihkan. Kegagalan pemeriksaan tidak dianggap sebagai akses sah.
+3. Submit membuang payload context reducer dan menaikkan generation, menyembunyikan ringkasan lama, lalu mengambil bootstrap baru. Pilihan harus masih cocok dengan hasil terbaru. Revoked/unavailable meminta pilihan ulang; error koneksi menyediakan retry tanpa memunculkan pesan backend.
+4. `LatestRequest` membatalkan transport sebelumnya dan menolak hasil dengan generation lama, termasuk transport yang terlambat menyelesaikan abort. Escape/unmount membatalkan request. Membatalkan submit tidak menghidupkan kembali tampilan lama: pengguna memeriksa dan memilih lagi.
+5. Setelah valid, navigasi dokumen penuh ke route konteks menghapus request, React state dan router cache dokumen lama. Route tujuan kembali memvalidasi pilihan untuk menangani perubahan akses di antara validasi dan navigasi. Tidak ada cache bisnis atau store sinkronisasi baru.
+
+URL tetap `/app/i/[institutionId]/as/[membershipId]`. Wakil dengan scope program jamak tetap satu membership; tanpa query parameter berarti **semua program yang ditugaskan**, bukan seluruh lembaga. Opsional `?program=<id>` memilih satu program dari scope aktif membership tersebut. Server `resolveContext` menolak program di luar assignment, pasangan tenant/membership yang salah, fokus pada role relationship/institution-wide, dan parameter program berulang. Model fokus membatasi `programScopeIds`, `leadershipScopes`, label, dan program metadata menjadi program terpilih; generation key juga menyertakan program. Scope institution-wide tetap eksplisit dan tidak dibuat menjadi daftar program buatan.
+
+Preference menyimpan hanya `institutionId`, `membershipId`, serta `programId` opsional, dengan key per Auth user. Format dua ID lama tetap valid. Semua ID diperiksa ulang; program invalid/revoked juga membuang preference dan meminta pilihan. Preference tidak menyimpan permission/token/payload bisnis. URL setiap tab adalah sumber konteks presentasi: penulisan preference tab lain tidak mengubah mode/tab aktif. Logout/account change tetap mengosongkan state dan preference serta keluar lintas tab.
+
+Tidak ada query bisnis monitoring, anak, kelas atau roster pada 12.4. Query intent Wali tetap `guardian-relationships`; Mudir `institution-monitoring`; Wakil `scoped-monitoring` dengan ID program eksplisit. Metadata seluruh pilihan role hanya untuk navigasi, tidak menjadi izin membaca gabungan data bisnis. RLS tetap boundary otorisasi. Repository bisnis berikutnya wajib menerima konteks terpilih dan filter relationship/scope eksplisit, tanpa preload union permission. Pengujian payload reducer dan request gateway menjaga batas yang sudah ada; belum merupakan pengujian query bisnis yang belum dibuat.
+
+Revalidasi terjadi ketika membuka switcher, submit, navigasi/reload, dan expiry scope yang diketahui. Tidak memasang realtime private-table subscription atau polling periodik. Pencabutan yang terjadi saat halaman diam diketahui pada pemeriksaan berikutnya; backend menolak akses langsung sesuai RLS. Snapshot UI bukan lease/grant. `scheduled_end_at` dan workflow backend tidak disentuh.
+
+Tambahan file: route `app/context-options`, `application/latest-request`, `data/context-options`, tiga komponen switcher/selector/label, unit `context-switch.test.ts`, E2E `switcher.spec.ts`. Domain context, active-context, chooser, states, preference dan route context diperluas untuk fokus program. Button menerima ref untuk pengembalian fokus. Fixture/runner menambah satu akun scope yang dapat dicabut melalui RPC governance di lab; endpoint kontrol lab dibatasi satu aksi fixture dengan token acak runtime, hanya loopback, dan tidak menjadi bagian aplikasi.
+
+Migration 1–11, schema/RLS/RPC produk, permission, approval dan provisioning tidak berubah. Hasil uji ada di `TEST_REPORT.md`. Berhenti setelah 12.4; tidak memulai 12.5 App Shell, halaman bisnis atau Flutter.
+
+## Fondasi 12.3: context bootstrap (2026-10-01)
+
+Bootstrap memakai backend migration 1–11 tanpa perubahan schema, RPC atau RLS. Tidak ada migration baru. Bagian ini merekam fondasi pemilihan awal; perluasan switcher 12.4 dijelaskan di atas.
 
 Alur: `/login` → `/app` memverifikasi Auth dan profile → context kosong menampilkan state khusus → satu konteks valid tanpa preferensi invalid masuk otomatis → beberapa konteks membuka `/app/select-context` → pilihan masuk `/app/i/[institutionId]/as/[membershipId]`. Deep link selalu menjalankan bootstrap baru dan mencocokkan kedua ID terhadap konteks milik caller; ID tidak diteruskan sebagai grant/role. Link salah menampilkan permission-denied generik tanpa data tenant tujuan.
 
@@ -32,7 +56,7 @@ Implementasi berada di `apps/web`, memakai Next.js App Router + TypeScript, Reac
 
 Tersedia: login email/password untuk akun existing, logout sesi browser saat ini, cookie session/persistence/refresh, protected `/app`, profil akun sendiri, redirect internal, loading/error/access state, indikator koneksi dasar. Halaman `/app` adalah konfirmasi akun, bukan dashboard bisnis.
 
-Belum tersedia: full institution/role switcher (12.4), navigation bisnis, dashboard, manajemen akun, invitation UI, teaching flow, Flutter, Super Admin, analytics, laporan, offline storage/queue/sync. Tidak ada signup, forgot-password atau OAuth UI pada checkpoint ini.
+Belum tersedia: navigation bisnis, dashboard, manajemen akun, invitation UI, teaching flow, Flutter, Super Admin, analytics, laporan, offline storage/queue/sync. Tidak ada signup, forgot-password atau OAuth UI pada checkpoint ini.
 
 ## Struktur dan batas tanggung jawab
 

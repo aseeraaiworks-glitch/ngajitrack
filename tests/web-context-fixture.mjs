@@ -4,7 +4,7 @@ import { makeFixture } from './fixture.mjs';
 export async function webContextFixture(lab, api, password) {
   const accounts = {}, authUsers = {};
   const base = ['super','adminA','adminB','teacher','unassigned','guardian','student','student2','outsider'];
-  const extra = ['deputySingle','deputyMultiple','noScope','expired','revoked','inactiveProgram','institutionDeputy','missingProfile','loadError','lostSession'];
+  const extra = ['deputySingle','deputyMultiple','noScope','expired','revoked','inactiveProgram','institutionDeputy','missingProfile','loadError','lostSession','switchRevoked'];
   for (const name of [...base, ...extra]) {
     const email = 'context-' + name.toLowerCase() + '-' + randomBytes(5).toString('hex') + '@example.invalid';
     if (name === 'missingProfile') await lab.query('alter table auth.users disable trigger on_auth_user_created');
@@ -41,7 +41,7 @@ export async function webContextFixture(lab, api, password) {
   const programs = {
     deputySingle: [f.programs.a.id], deputyMultiple: [f.programs.a.id, f.programs.aOther.id],
     noScope: [f.programs.a.id], expired: [f.programs.a.id], revoked: [f.programs.a.id],
-    inactiveProgram: [inactive.id], institutionDeputy: null, guardian: [f.programs.a.id],
+    inactiveProgram: [inactive.id], institutionDeputy: null, guardian: [f.programs.a.id], switchRevoked: [f.programs.a.id],
   };
   for (const [name, ids] of Object.entries(programs)) {
     const invitation = await as('outsider', "select public.invite_leadership($1,$2,'WAKIL_MUDIR',$3) value", [f.institutions.A, f.profiles[name], ids]);
@@ -52,10 +52,16 @@ export async function webContextFixture(lab, api, password) {
   }
   await lab.query('update public.programs set is_active=false where id=$1', [inactive.id]);
   for (const name of ['loadError','lostSession']) await f.member(name,'A','TEACHER');
+  await f.member('switchRevoked','A','GUARDIAN');
   const memberships = (await lab.query('select m.id,m.institution_id,m.profile_id,r.code from public.institution_members m join public.roles r on r.id=m.role_id')).rows;
   for (const [name, account] of Object.entries(accounts)) {
     account.profileId = f.profiles[name] ?? null;
     account.memberships = memberships.filter(m => m.profile_id === account.profileId);
   }
-  return { accounts, institutions: f.institutions, programs: { a: f.programs.a.id, other: f.programs.aOther.id }, profileIds: Object.values(f.profiles) };
+  const revokeLiveScope = async () => {
+    const scope = (await lab.query('select s.id from private.membership_scopes s join public.institution_members m on m.id=s.membership_id where m.profile_id=$1 and s.revoked_at is null', [f.profiles.switchRevoked])).rows[0];
+    if (!scope) throw Error('Live scope fixture unavailable');
+    await as('outsider', 'select public.revoke_leadership_scope($1)', [scope.id]);
+  };
+  return { accounts, institutions: f.institutions, programs: { a: f.programs.a.id, other: f.programs.aOther.id }, profileIds: Object.values(f.profiles), revokeLiveScope };
 }

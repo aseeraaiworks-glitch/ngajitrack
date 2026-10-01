@@ -1,5 +1,34 @@
 # Laporan pengujian backend foundation
 
+## Checkpoint 12.4 — hasil final (2026-10-01)
+
+| Pemeriksaan | Hasil | Cakupan/perintah |
+| --- | --- | --- |
+| Lint | PASS, 0 error/0 warning | pnpm lint:web |
+| Typecheck | PASS | web-local typegen + tsc --noEmit; diulang setelah perbaikan, build final juga TypeScript |
+| Production build | PASS | pnpm test:web membangun Next produksi sebelum Chromium; context-options dinamis |
+| Unit | 39/39 PASS | pnpm test:web:unit; 31 existing + 8 switch/scope/request |
+| Browser/E2E | 53/53 PASS, 0 skipped | pnpm test:web; 38 existing + 15 switcher; putaran final 2,6 menit |
+| Query-intent integration | PASS | Gateway mengaudit own-profile/own-membership, filter active scoped-program eksplisit; tanpa query business union role |
+| SQL/RLS schema 11 | 53/53 PASS | node scripts/test-workflow-regression.mjs; 51 native + 2 embedded historis eksplisit |
+| Auth/JWT/PostgREST backend | 24/24 PASS | node scripts/test-workflow-api.mjs; tenant/role/scope/approval/provisioning |
+| Main fixture preservation | PASS | Fingerprint public/Auth sama sebelum/sesudah setiap runner; lab dibersihkan |
+| Dependency audit | PASS | pnpm audit --audit-level high: No known vulnerabilities found |
+| Secret/ignore audit | PASS | 117 kandidat, 0 temuan pola secret/path sensitif, 12/12 probe ignore; staged index diperiksa ulang |
+| Migration/dependency diff | PASS | Migration 1–11, schema/RLS/RPC produk, manifest/lock tidak berubah |
+
+Lima belas test browser baru: Mudir → Wali → Mudir; Admin ↔ Ustaz pada lembaga sama; lembaga A ↔ B; Wakil satu program dengan reload; Wakil program A → B → seluruh program assigned; Wakil institution-wide tanpa scope buatan; scope dicabut via RPC saat menu terbuka lalu fresh submit/deep link ditolak; preference program invalid; foreign program/parameter ganda/foreign membership/cross-tenant; menu lama terlambat sesudah cancel/reopen; pending switch menyembunyikan mode lama dan response yang dibatalkan tidak menavigasi; dua tab independen plus logout/preference cleanup; keyboard/focus/Escape/mobile/reduced-motion; error validasi/retry; endpoint authenticated/no-store/GET-only.
+
+Unit baru menguji narrowing seluruh DTO (IDs, scope records, labels), program yang tidak ditugaskan, larangan program focus pada relationship/institution scope, state generation berbeda antarprogram, preference invalid, scope order vs revocation/expiry, serta late result ketika transport mengabaikan abort. Test reducer existing tetap memuat payload sintetis mode lama dan membuktikan pembersihan/penolakan generation sebelumnya. Tidak mengklaim pengujian query bisnis yang belum dibuat.
+
+Putaran browser awal 50/53: implicit label select menyertakan teks option dalam pencarian label dan native dialog membiarkan Tab melewati kontrol terakhir. Asosiasi label dibuat eksplisit dengan htmlFor/id, focus wrap ditambahkan; hasil final 53/53. Pemeriksaan abort sebelum redirect/hasil JSON serta pesan pembatalan yang netral masuk build final. Warning FORCE_COLOR dan error AuthApiError pada negative refresh fixture adalah expected; tidak ada test gagal/skipped pada putaran final.
+
+Semua akun dan scope sintetis dibuat di lab native/Auth/PostgREST terpisah. Satu scope dicabut lewat RPC berwenang setelah halaman/menu terbuka. Kontrol fixture hanya pada gateway loopback test dengan token acak memori; tidak ada test hook pada aplikasi produksi. Request normal memakai JWT Auth asli; tidak ada primary reset/fixture mutation. Tidak mengulang regresi concurrency/scheduler/upgrade historis karena backend tidak diubah.
+
+Bukti lokal yang diabaikan Git: reports/web-12.4-e2e.txt (putaran awal), web-12.4-e2e-final.txt, web-12.4-sql.txt, web-12.4-api.txt, web-switcher-mobile.png (diperiksa visual). Batas: Chromium lokal dan data context summary; belum browser lain/deployment/query bisnis. Realtime scope updates tidak termasuk milestone ini; RLS tetap menolak operasi setelah pencabutan.
+
+Langkah tepat berikutnya: commit/push checkpoint ke private main setelah audit index, verifikasi HEAD/remote dan working tree, laporkan lalu **BERHENTI sebelum 12.5**.
+
 ## Checkpoint 12.3 — hasil final (2026-10-01)
 
 | Pemeriksaan | Hasil | Cakupan/perintah |

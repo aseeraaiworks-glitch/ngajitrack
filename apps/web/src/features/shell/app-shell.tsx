@@ -1,5 +1,6 @@
 'use client';
 import { useState, type ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import type { AuthenticatedProfile } from '@/domain/auth';
 import { contextKey, type ApplicationContext } from '@/domain/application-context';
 import { navigationFor } from '@/domain/navigation';
@@ -15,7 +16,7 @@ function ShellFrame({ profile, context, children, switcher }: ShellProps & { swi
   const [collapsed, setCollapsed] = useState(false);
   // Never retain a tenant/role label or link after the switcher invalidates state.
   const active = context && state.contextKey === contextKey(context) ? context : null;
-  const items = navigationFor(active, !!profile);
+  const items = navigationFor(active, !!profile, usePathname());
   return <div className="shell-layout" data-testid="app-shell" data-collapsed={collapsed}>
     <Sidebar items={items} collapsed={collapsed} onToggle={() => setCollapsed(value => !value)} />
     <div className="shell-body">

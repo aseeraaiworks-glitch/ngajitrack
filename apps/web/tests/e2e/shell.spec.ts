@@ -71,7 +71,7 @@ for (const [account, role, label] of [
 ]) {
   test('navigation presents only selected role: ' + role, async ({ page }) => {
     await enter(page, account, role);
-    await expect(nav(page).getByRole('link')).toHaveCount(2);
+    await expect(nav(page).getByRole('link')).toHaveCount(role === 'INSTITUTION_ADMIN' ? 3 : 2);
     await expect(nav(page).getByRole('link', { name: label, exact: true })).toHaveAttribute('href', path(account, role));
     await expect(nav(page).getByText(/Analytics|Laporan|Dashboard|Segera hadir/)).toHaveCount(0);
     if (role === 'GUARDIAN') await expect(nav(page).getByRole('link', { name: 'Ruang kepemimpinan' })).toHaveCount(0);

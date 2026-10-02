@@ -39,6 +39,12 @@ try {
     res.setHeader('Cache-Control', 'no-store');
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
     const route = req.url ?? '/';
+    if (route === '/__lab/revoke-structure-admin') {
+      if (req.method !== 'POST' || req.headers.authorization !== 'Bearer ' + controlToken) { res.writeHead(403); res.end(); return; }
+      try { await contextFixture.revokeStructureAdmin(); res.writeHead(204); res.end(); }
+      catch { res.writeHead(500); res.end(); }
+      return;
+    }
     if (route === '/__lab/restore-profile-lookup') {
       if (req.method !== 'POST' || req.headers.authorization !== 'Bearer ' + controlToken) { res.writeHead(403); res.end(); return; }
       failProfileLookup = false; res.writeHead(204); res.end(); return;
@@ -57,7 +63,7 @@ try {
     if (!upstream) { res.writeHead(404); res.end(); return; }
     let userId;
     try { userId = JSON.parse(Buffer.from(String(req.headers.authorization).split('.')[1], 'base64url').toString()).sub; } catch { /* Anonymous request. */ }
-    if (route.startsWith('/rest/v1/')) requests.push({ userId, route });
+    if (route.startsWith('/rest/v1/')) requests.push({ userId, route, method: req.method });
     if (contextFixture && userId === contextFixture.accounts.boundaryError.id && route.startsWith('/rest/v1/profiles?') && failProfileLookup) {
       res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"message":"synthetic private profile failure"}'); return;
     }
@@ -71,6 +77,11 @@ try {
     }
     try {
       const body = []; for await (const chunk of req) body.push(chunk);
+      if (req.method === 'POST' && /^\/rest\/v1\/(programs|institution_levels|program_levels|groups)\?/.test(route)) {
+        const value = JSON.parse(Buffer.concat(body).toString());
+        const actor = Object.values(contextFixture.accounts).find(a => a.id === userId);
+        assert.ok(actor?.memberships.some(m => m.code === 'INSTITUTION_ADMIN' && m.institution_id === value.institution_id), 'Structure insertion must bind an own admin tenant');
+      }
       const headers = new Headers();
       for (const name of ['authorization', 'content-type', 'apikey', 'x-client-info', 'x-supabase-api-version', 'prefer', 'accept']) if (req.headers[name]) headers.set(name, String(req.headers[name]));
       const response = await fetch(upstream, { method: req.method, headers, body: body.length ? Buffer.concat(body) : undefined });
@@ -107,6 +118,7 @@ try {
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_' + randomBytes(24).toString('hex'),
     NEXT_TELEMETRY_DISABLED: '1',
     NGT_WEB_TEST_URL: `http://127.0.0.1:${port}`,
+    NGT_WEB_TEST_REST_URL: api.rest, NGT_WEB_TEST_AUTH_URL: api.auth,
     NGT_WEB_TEST_ACCOUNTS: JSON.stringify(accounts),
     NGT_WEB_TEST_PASSWORD: password,
     NGT_WEB_TEST_EXPIRED_SESSION: JSON.stringify(expiredSession),
@@ -114,6 +126,7 @@ try {
     NGT_WEB_LAB_CONTROL_URL: `http://127.0.0.1:${apiPort}/__lab/revoke-switch-scope`,
     NGT_WEB_SHELL_CONTROL_URL: `http://127.0.0.1:${apiPort}/__lab/revoke-shell-scope`,
     NGT_WEB_RESTORE_PROFILE_URL: `http://127.0.0.1:${apiPort}/__lab/restore-profile-lookup`,
+    NGT_WEB_STRUCTURE_REVOKE_URL: `http://127.0.0.1:${apiPort}/__lab/revoke-structure-admin`,
     NGT_WEB_LAB_CONTROL_TOKEN: controlToken,
   };
   await child(next, ['build'], env);
@@ -124,7 +137,7 @@ try {
   await child(playwright, ['test', ...process.argv.slice(2).filter(value => value !== '--monitoring')], env);
   monitoring.verify(monitoringEnabled);
   const own = new Map(Object.values(contextFixture.accounts).map(a => [a.id, a.profileId]));
-  for (const { userId, route } of requests) {
+  for (const { userId, route, method } of requests) {
     const query = new URL(route, 'http://localhost');
     if (query.pathname === '/rest/v1/profiles' && own.has(userId)) {
       assert.equal(query.searchParams.get('auth_user_id'), 'eq.' + userId);
@@ -135,8 +148,15 @@ try {
       assert.ok(query.searchParams.get('institution_id')?.startsWith('in.('));
     }
     if (query.pathname === '/rest/v1/programs') {
-      assert.ok(query.searchParams.get('id')?.startsWith('in.('), 'Program metadata must use explicit scope IDs');
-      assert.equal(query.searchParams.get('is_active'), 'eq.true');
+      if (query.searchParams.get('id')?.startsWith('in.(')) assert.equal(query.searchParams.get('is_active'), 'eq.true');
+      else {
+        if (method !== 'POST') assert.ok(query.searchParams.get('institution_id')?.startsWith('eq.'), 'Organization query must bind one tenant');
+        assert.ok(contextFixture.accounts.structureAdmin.id === userId || contextFixture.accounts.structureRevoked.id === userId || contextFixture.accounts.adminA.id === userId || contextFixture.accounts.adminB.id === userId, 'Organization queries require an explicit admin fixture');
+      }
+    }
+    if (['/rest/v1/institution_levels', '/rest/v1/program_levels', '/rest/v1/groups'].includes(query.pathname)) {
+      // INSERT carries tenant in its whitelisted body; all reads and edits must have a tenant filter.
+      if (query.searchParams.get('select') !== 'id' || query.searchParams.has('id')) assert.ok(query.searchParams.get('institution_id')?.startsWith('eq.'));
     }
     assert.ok(!['/rest/v1/institutions','/rest/v1/student_profiles','/rest/v1/guardian_students','/rest/v1/teacher_assignments','/rest/v1/rpc/monitor_students'].includes(query.pathname), 'Bootstrap must not fetch union business data');
   }

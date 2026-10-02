@@ -18,8 +18,9 @@ test('each selected role has only its own presentation route, never the union of
   const labels = ['Ruang kepemimpinan','Ruang kepemimpinan','Ruang wali','Ruang pengajaran','Ruang santri','Ruang administrasi'];
   for (const [i, role] of ['MUDIR','WAKIL_MUDIR','GUARDIAN','TEACHER','STUDENT','INSTITUTION_ADMIN'].entries()) {
     const items = navigationFor(fixture().find(c => c.roleCode === role)!);
-    assert.equal(items.length, 2); assert.equal(items[0].label, labels[i]);
-    assert.equal(items[0].href, '/app/i/a/as/' + role); assert.equal(items[1].href, '/app/select-context');
+    assert.equal(items.length, role === 'INSTITUTION_ADMIN' ? 3 : 2); assert.equal(items[0].label, labels[i]);
+    assert.equal(items[0].href, '/app/i/a/as/' + role); assert.equal(items.at(-1)!.href, '/app/select-context');
+    assert.equal(items.some(item => item.label === 'Struktur lembaga'), role === 'INSTITUTION_ADMIN');
     assert.equal(items.filter(item => item.current).length, 1);
   }
 });

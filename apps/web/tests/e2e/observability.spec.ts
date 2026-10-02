@@ -75,3 +75,18 @@ test('server runtime and boundary capture unexpected failure while safe retry st
   expect(restored.status()).toBe(204); await page.getByRole('button', { name: 'Coba lagi', exact: true }).click();
   await expect(page.getByTestId('shell-role')).toContainText('Ustaz');
 });
+
+test('organization validation, duplicate and permission errors are not reported as crashes', async ({ page, request }) => {
+  await login(page, 'structureAdmin'); await expect(page.getByRole('heading', { name: 'Pilih konteks Anda' })).toBeVisible();
+  const baseline = (await events(request)).length;
+  const member = fixture.accounts.structureAdmin.memberships.find(m => m.code === 'INSTITUTION_ADMIN')!;
+  const path = '/app/i/' + member.institution_id + '/as/' + member.id + '/structure/data';
+  const mutation = { entity: 'level', values: { name: 'Synthetic Sentry validation', code: 'SENTRY_TEST', sort_order: 1, is_active: true } };
+  const options = { data: mutation, headers: { Origin: process.env.NGT_WEB_TEST_URL! } };
+  expect((await page.request.post(path, options)).status()).toBe(200);
+  expect((await page.request.post(path, options)).status()).toBe(409);
+  expect((await page.request.post(path, { ...options, data: { ...mutation, values: { ...mutation.values, name: '' } } })).status()).toBe(400);
+  const guardian = fixture.accounts.structureAdmin.memberships.find(m => m.code === 'GUARDIAN')!;
+  expect((await page.request.post('/app/i/' + guardian.institution_id + '/as/' + guardian.id + '/structure/data', options)).status()).toBe(403);
+  await page.waitForTimeout(600); expect((await events(request)).length).toBe(baseline);
+});

@@ -4,7 +4,7 @@ import { makeFixture } from './fixture.mjs';
 export async function webContextFixture(lab, api, password) {
   const accounts = {}, authUsers = {};
   const base = ['super','adminA','adminB','teacher','unassigned','guardian','student','student2','outsider'];
-  const extra = ['deputySingle','deputyMultiple','noScope','expired','revoked','inactiveProgram','institutionDeputy','missingProfile','loadError','lostSession','switchRevoked','shellRevoked','boundaryError'];
+  const extra = ['deputySingle','deputyMultiple','noScope','expired','revoked','inactiveProgram','institutionDeputy','missingProfile','loadError','lostSession','switchRevoked','shellRevoked','boundaryError','structureAdmin','structureRevoked'];
   for (const name of [...base, ...extra]) {
     const email = 'context-' + name.toLowerCase() + '-' + randomBytes(5).toString('hex') + '@example.invalid';
     if (name === 'missingProfile') await lab.query('alter table auth.users disable trigger on_auth_user_created');
@@ -54,6 +54,10 @@ export async function webContextFixture(lab, api, password) {
   for (const name of ['loadError','lostSession','boundaryError']) await f.member(name,'A','TEACHER');
   await f.member('switchRevoked','A','GUARDIAN');
   await f.member('shellRevoked','A','GUARDIAN');
+  await f.member('structureAdmin','A','INSTITUTION_ADMIN');
+  await f.member('structureAdmin','B','INSTITUTION_ADMIN');
+  await f.member('structureAdmin','A','GUARDIAN');
+  await f.member('structureRevoked','A','INSTITUTION_ADMIN');
   const memberships = (await lab.query('select m.id,m.institution_id,m.profile_id,r.code from public.institution_members m join public.roles r on r.id=m.role_id')).rows;
   for (const [name, account] of Object.entries(accounts)) {
     account.profileId = f.profiles[name] ?? null;
@@ -65,5 +69,6 @@ export async function webContextFixture(lab, api, password) {
     await as('outsider', 'select public.revoke_leadership_scope($1)', [scope.id]);
   };
   return { accounts, institutions: f.institutions, programs: { a: f.programs.a.id, other: f.programs.aOther.id }, profileIds: Object.values(f.profiles),
-    revokeLiveScope: () => revokeScope('switchRevoked'), revokeShellScope: () => revokeScope('shellRevoked') };
+    revokeLiveScope: () => revokeScope('switchRevoked'), revokeShellScope: () => revokeScope('shellRevoked'),
+    revokeStructureAdmin: () => as('adminA', "update public.institution_members set status='INACTIVE',ended_at=now() where profile_id=$1 and institution_id=$2", [f.profiles.structureRevoked, f.institutions.A]) };
 }

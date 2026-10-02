@@ -1,5 +1,32 @@
 # Laporan pengujian NgajiTrack
 
+## Checkpoint 13.1 — hasil final (2026-10-02)
+
+| Pemeriksaan | Hasil final |
+| --- | --- |
+| Production build + TypeScript | PASS tanpa DSN dan dengan SDK enabled; tsc --noEmit terpisah juga PASS |
+| Lint | PASS, 0 error/0 warning |
+| Unit | 58/58 PASS |
+| SQL/RLS schema 11 | 53/53 PASS — reports/web-13.1-sql.txt |
+| Auth/JWT/API | 24/24 PASS — reports/web-13.1-api.txt |
+| Browser organisasi | 20/20 PASS, termasuk pengembalian fokus dialog |
+| Full browser / Milestone 12 regression | 91/91 PASS, 0 skipped; 6,5 menit — reports/web-13.1-e2e-final.txt |
+| Sentry receiver regression | 7/7 PASS, 0 skipped; 32,3 detik — reports/web-13.1-sentry-final.txt |
+| Visual mobile follow-up | PASS build/typecheck + 1/1 test responsif terarah, setelah search input diberi baris penuh — reports/web-13.1-responsive-final.txt |
+| Dependency audit | No known vulnerabilities found |
+| Secret/ignore | 163 kandidat; 0 secret terkonfirmasi; 12/12 ignore probe; index diaudit sebelum commit |
+| Migration 1–11 | Tidak berubah; tidak ada migration baru |
+
+Iterasi yang sudah diselesaikan: (1) TypeScript helper test membedakan Fetch Response.status dari Playwright status(); (2) CSRF origin awal membandingkan URL internal Next setelah Proxy sehingga POST sah ikut ditolak; helper sekarang memakai exact public Host + scheme, menolak origin kosong/asing, suffix domain palsu, path/credential dan port yang berbeda; (3) tutup dialog native sebelum mengembalikan fokus agar background tidak masih inert saat Escape. Bug fokus merupakan satu-satunya kegagalan putaran organisasi 19/20 sebelumnya; setelah diperbaiki seluruh 91 browser test lulus. Review screenshot mobile menemukan search input terlalu sempit meski tidak overflow; layout kemudian diberi baris penuh pada mobile dan assertion lebar minimum ditambahkan pada test responsif.
+
+Coverage baru: create/edit/nonaktif program; primary learning type terpisah; nama sama menjadi record baru; level CRUD/sort/duplicate; attach/nonaktif/reactivate relation; kelas create/edit/nonaktif; histori dan NULL legacy; penolakan program/level/tenant mismatch; lima role non-admin pada app dan direct PostgREST; akun multi-role pada mode non-admin; stale snapshot dua admin; CSRF/ownership injection; switching/revocation; loading/empty/error/retry; mobile/keyboard/reduced motion. Audit kelas diperiksa untuk actor dan tenant yang benar. Fixture utama tetap identik pada runner yang telah selesai.
+
+Sentry mempertahankan enam skenario 12.6 (client exception, rejection, expected Auth/access errors, logout privacy, handled server outage, runtime/boundary/retry) dan menambah satu skenario untuk duplicate/validation/permission errors struktur yang tidak menghasilkan crash event. Audit akhir receiver memastikan error-only envelope tanpa sensitive payload; DSN tetap optional dan seluruh 91 acceptance berjalan tanpa DSN. Runtime profile failure/negative Auth logs pada fault test adalah error sintetis yang diharapkan, bukan kegagalan suite.
+
+Batas: Chromium lokal, bukan pengujian deployment production. Tidak mengubah backend sehingga suite upgrade/scheduler/concurrency backend yang telah selesai tidak diulang. Race edit form ditangani melalui compare-and-set; kolom revision global baru tidak ditambahkan.
+
+Seluruh pemeriksaan final lulus, tanpa failure/skipped pada hasil akhir. Suite penuh 91/91 dijalankan setelah fix fokus; satu perubahan CSS responsif sesudahnya diverifikasi lewat build/typecheck dan test responsif 1/1, tanpa mengulang regression yang tidak terdampak. Screenshot desktop/mobile/dialog ditinjau, dengan width check pada 320/768/1440 dan keyboard/Escape. Tidak ada migration baru; tidak memulai Milestone 13.2.
+
 ## Checkpoint 12.6 — hasil final acceptance / Sentry (2026-10-02)
 
 | Pemeriksaan | Hasil | Bukti/perintah |

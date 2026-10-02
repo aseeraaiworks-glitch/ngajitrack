@@ -1,12 +1,12 @@
 # NgajiTrack
 
-Backend Supabase/PostgreSQL migration 1–11 dan fondasi aplikasi web multi-role di `apps/web`, berdasarkan dokumen dalam `docs/` serta keputusan pengguna. Checkpoint frontend mencakup scaffold, authentication, context bootstrap/switcher, responsive App Shell serta acceptance/observability Sentry opsional (12.1–12.6). Tidak ada Flutter, dashboard bisnis, Personal Mode, Mushaf reader, teaching flow, analytics, laporan produk atau pembayaran.
+Backend Supabase/PostgreSQL migration 1–11 dan aplikasi web multi-role di `apps/web`, berdasarkan dokumen dalam `docs/` serta keputusan pengguna. Fondasi Auth/context/App Shell/Sentry 12.1–12.6 dilanjutkan dengan pengelolaan struktur lembaga (13.1): program, tingkatan, relasi program-level dan kelas/halaqah. Tidak ada Flutter, Personal Mode, Mushaf reader, teaching flow, analytics, laporan produk atau pembayaran.
 
 Status lengkap dan langkah melanjutkan ada di [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
-## Checkpoint aplikasi — 12.6
+## Checkpoint aplikasi — 13.1
 
-Panduan arsitektur, environment, security dan test: [MILESTONE_12.md](docs/MILESTONE_12.md).
+Panduan fondasi: [MILESTONE_12.md](docs/MILESTONE_12.md). Kontrak, permission dan batas struktur lembaga: [MILESTONE_13.md](docs/MILESTONE_13.md).
 
 ```sh
 pnpm install --frozen-lockfile
@@ -15,7 +15,9 @@ pnpm dev:web:local
 
 Supabase lokal existing harus aktif. Buka `http://127.0.0.1:3000/login` dan gunakan akun existing. Perintah lokal membaca publishable key ke memori; tidak menulis credential. Setelah login, aplikasi memuat membership/scope backend, memilih satu context valid atau menampilkan halaman pilihan. Shell memakai sidebar desktop dan drawer tablet/mobile. Tombol **Ganti konteks** memvalidasi ulang lembaga, peran dan fokus program sebelum berpindah; URL setiap tab tetap independen. Navigasi menuju ringkasan/pilihan context yang sudah tersedia. Online/Offline hanya menunjukkan koneksi perangkat; sinkronisasi offline belum tersedia. Pengujian browser: `pnpm test:web` memakai environment terpisah tanpa DSN dan tidak mereset fixture utama.
 
-Sentry tidak aktif bila DSN kosong. Panduan aktivasi env, privacy dan optional source-map CI: [OBSERVABILITY.md](docs/OBSERVABILITY.md). `node scripts/test-web.mjs --monitoring` menguji SDK enabled melalui receiver lokal, tanpa mengirim data ke project eksternal. Berhenti setelah 12.6; belum memulai fitur bisnis.
+Mode Admin Lembaga memiliki menu **Struktur lembaga**. Operasi memakai JWT pengguna, validasi konteks server dan RLS existing. Penonaktifan mempertahankan histori; perpindahan konteks akademik kelas lama mengikuti guard backend. Tidak ada migration tambahan.
+
+Sentry tidak aktif bila DSN kosong. Panduan aktivasi env, privacy dan optional source-map CI: [OBSERVABILITY.md](docs/OBSERVABILITY.md). `node scripts/test-web.mjs --monitoring` menguji SDK enabled melalui receiver lokal, tanpa mengirim data ke project eksternal. Berhenti setelah 13.1; belum memulai 13.2.
 
 ## Backend — migration 1–11
 

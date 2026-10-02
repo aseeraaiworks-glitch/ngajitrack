@@ -1,12 +1,12 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { contextKey, type ApplicationContext } from '@/domain/application-context';
 import { useSessionContext } from '@/features/auth/session-provider';
 import { savePreference } from './preference';
 import { ContextState } from './context-states';
 import { CurrentContextLabel } from './current-context-label';
 
-export function ActiveContext({ context, userId }: { context: ApplicationContext; userId: string }) {
+export function ActiveContext({ context, userId, children }: { context: ApplicationContext; userId: string; children?: ReactNode }) {
   const { state, dispatch } = useSessionContext();
   const key = contextKey(context);
   useEffect(() => {
@@ -21,5 +21,5 @@ export function ActiveContext({ context, userId }: { context: ApplicationContext
     }, 1000) : undefined;
     return () => { if (timer !== undefined) window.clearInterval(timer); };
   }, [context, dispatch, key, userId]);
-  return state.contextKey === key ? <CurrentContextLabel context={context} /> : <ContextState kind="loading" />;
+  return state.contextKey === key ? children ?? <CurrentContextLabel context={context} /> : <ContextState kind="loading" />;
 }

@@ -1,5 +1,5 @@
 # NgajiTrack by Aseerakarsa
-**Live:** https://aseerakarsa.com | **Contact:** astra@aseerakarsa.com | **Since:** Sep 2024
+**Live:** https://aseerakarsa.com | **Contact:** contact@aseerakarsa.com | **Since:** Sep 2024
 
 > Al-Qur'an habit tracker - Bandar Lampung, Indonesia
 

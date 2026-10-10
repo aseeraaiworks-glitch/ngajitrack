@@ -1,4 +1,9 @@
-# NgajiTrack
+# NgajiTrack by Aseerakarsa
+**Live:** https://aseerakarsa.com | **Contact:** astra@aseerakarsa.com | **Since:** Sep 2024
+
+> Al-Qur'an habit tracker - Bandar Lampung, Indonesia
+
+---
 
 Backend Supabase/PostgreSQL migration 1–11 dan aplikasi web multi-role di `apps/web`, berdasarkan dokumen dalam `docs/` serta keputusan pengguna. Fondasi Auth/context/App Shell/Sentry 12.1–12.6 dilanjutkan dengan pengelolaan struktur lembaga (13.1): program, tingkatan, relasi program-level dan kelas/halaqah. Tidak ada Flutter, Personal Mode, Mushaf reader, teaching flow, analytics, laporan produk atau pembayaran.
 

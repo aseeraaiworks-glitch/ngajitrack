@@ -1,7 +1,7 @@
 # NgajiTrack by Aseerakarsa
 **Live:** https://aseerakarsa.com | **Contact:** contact@aseerakarsa.com | **Since:** Sep 2024
 
-> Al-Qur'an habit tracker - Bandar Lampung, Indonesia
+> Al-Qur'an habit tracker - Sabang,aceh, Indonesia
 
 ---
 
